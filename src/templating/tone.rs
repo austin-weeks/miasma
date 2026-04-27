@@ -17,7 +17,7 @@ impl TemplateTone {
             TemplateTone::Academic => ACADEMIC_LINK_TITLES,
         }
         .choose(&mut rand::rng())
-        .expect("the matching link titles list should not be empty")
+        .unwrap_or(&"")
     }
 
     pub fn random_style(&self) -> &'static str {
@@ -27,7 +27,7 @@ impl TemplateTone {
             TemplateTone::Academic => ACADEMIC_STYLES,
         }
         .choose(&mut rand::rng())
-        .expect("the matching styles list should not be empty")
+        .unwrap_or(&"")
     }
 }
 

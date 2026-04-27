@@ -7,6 +7,7 @@ mod template_iter;
 mod template_part;
 mod template_trait;
 mod tone;
+pub mod utils;
 
 pub use template_builder::TemplateBuilder;
 pub use template_iter::TemplateIter;
