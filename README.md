@@ -44,6 +44,28 @@ View all available [configuration options](#configuration):
 miasma --help
 ```
 
+### Run with Docker
+
+Build the image locally:
+
+```sh
+docker build -t miasma .
+```
+
+Run the container and bind the default port:
+
+```sh
+docker run --rm -p 9999:9999 miasma
+```
+
+If you want to use Docker Compose instead:
+
+```sh
+docker compose up --build
+```
+
+By default the container passes `--host 0.0.0.0` so the app is reachable from outside the container.
+
 ## How to Trap Malicious Scrapers
 
 Let's walk through an example of setting up a server to trap scrapers with _Miasma_. We'll pick `/naughty-bots` as our server's path to direct scraper traffic. We'll be using [_Nginx_](https://nginx.org/) as our server's reverse proxy, but the same result can be achieved with many different setups.

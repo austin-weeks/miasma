@@ -1,0 +1,8 @@
+version: "3.9"
+services:
+  miasma:
+    build: .
+    image: miasma:latest
+    ports:
+      - "9999:9999"
+    command: ["--host", "0.0.0.0"]
