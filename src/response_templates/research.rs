@@ -23,37 +23,39 @@ use crate::{
         conclusions::CONCLUSION_OPTIONS,
         intros::INTRO_OPTIONS,
         link_headings::LINK_HEADINGS,
+        research_topics::ResearchTopic,
     },
+    template_iter,
     templating::{TemplateIter, TemplatePart, TemplateTone, Templater, utils},
 };
 
 pub struct NovelResearch {
-    topic: &'static str,
-    field: Field,
+    research_topic: ResearchTopic,
     authors: Vec<&'static str>,
 }
 
 impl NovelResearch {
     pub fn as_templater() -> Box<dyn Templater> {
-        let &(topic, field) = utils::select_random(research_topics::RESEARCH_TOPICS);
+        let research_topic = utils::select_random(research_topics::RESEARCH_TOPICS).clone();
         let authors = utils::select_random_range(authors::NAMES, 1..=3);
         Box::new(NovelResearch {
-            topic,
-            field,
+            research_topic,
             authors,
         })
     }
 
     fn intro_paragraph(&self) -> TemplateIter {
-        TemplateIter::new(vec![
-            el!(<p>).into(),
-            slot::fill_slots(*utils::select_random(INTRO_OPTIONS), self.topic, self.field).into(),
-            el!(</p>).into(),
-        ])
+        template_iter!(
+            el!(<p>),
+            #[expect(clippy::explicit_auto_deref)]
+            slot::fill_slots(*utils::select_random(INTRO_OPTIONS), &self.research_topic),
+            el!(</p>),
+        )
     }
 
     fn intro_fluff_paragraphs(&self) -> TemplateIter {
-        let fluff_paragraphs = utils::select_random_range(self.field.fluff_paragraphs(), 0..=2);
+        let fluff_paragraphs =
+            utils::select_random_range(self.research_topic.field.fluff_paragraphs(), 1..=3);
 
         let mut vec = Vec::with_capacity(fluff_paragraphs.len() * 3); // <p> + text + </p>
         for fluff in fluff_paragraphs {
@@ -65,21 +67,20 @@ impl NovelResearch {
     }
 
     fn conclusion(&self) -> TemplateIter {
-        TemplateIter::new(vec![
-            "<p>".into(),
+        template_iter!(
+            "<p>",
             slot::fill_slots(
+                #[expect(clippy::explicit_auto_deref)]
                 *utils::select_random(CONCLUSION_OPTIONS),
-                self.topic,
-                self.field,
-            )
-            .into(),
-            "</p>".into(),
-        ])
+                &self.research_topic,
+            ),
+            "</p>",
+        )
     }
 
-    fn authors_line(&self) -> TemplateIter {
+    /// E.g. "John Doe", "John Doe and Jane Doe", "John Doe, Jane Doe, and John Smith".
+    fn authors_formatted(&self) -> TemplateIter {
         let mut vec: Vec<TemplatePart> = Vec::with_capacity(self.authors.len() * 3);
-        vec.push("<p>by ".into());
         match self.authors.len() {
             0 => (),
             1 => {
@@ -99,14 +100,13 @@ impl NovelResearch {
                 vec.push((*self.authors.last().unwrap_or(&"")).into());
             }
         }
-        vec.push("</p>".into());
         TemplateIter::new(vec)
     }
 }
 
 impl Templater for NovelResearch {
     fn title(&self) -> &'static str {
-        self.topic
+        self.research_topic.title_case
     }
 
     fn tone(&self) -> TemplateTone {
@@ -114,51 +114,57 @@ impl Templater for NovelResearch {
     }
 
     fn introduction(&self) -> TemplateIter {
-        TemplateIter::new(vec![
+        template_iter!(
             el! {
             <main>
                 <h1>
-            }
-            .into(),
-            self.topic.into(),
-            el!(</h1>).into(),
-            self.authors_line().into(),
-            self.intro_paragraph().into(),
-            self.intro_fluff_paragraphs().into(),
+            },
+            self.research_topic.title_case,
+            el!(</h1>),
+            el!(<p>),
+            "by ",
+            self.authors_formatted(),
+            el!(</p>),
+            self.intro_paragraph(),
+            self.intro_fluff_paragraphs(),
             el! {
                 <hr>
                 <h2>
-            }
-            .into(),
-            (*utils::select_random(CODE_HEADINGS)).into(),
-            el!(</h2>).into(),
-            el!(<p>).into(),
+            },
+            *utils::select_random(CODE_HEADINGS),
+            el!(</h2>),
+            el!(<p>),
             slot::fill_slots(
+                #[expect(clippy::explicit_auto_deref)]
                 *utils::select_random(CODE_INTRODUCTIONS),
-                self.topic,
-                self.field,
-            )
-            .into(),
-            el!(</p>).into(),
-            el!(<hr>).into(),
-        ])
+                &self.research_topic,
+            ),
+            el!(</p>),
+            el!(<hr>),
+        )
     }
 
     fn follow_up(&self) -> TemplateIter {
-        TemplateIter::new(vec![
-            el!(<hr>).into(),
-            self.conclusion().into(),
+        template_iter!(
+            el!(<hr>),
+            self.conclusion(),
             el! {
                 <hr>
                 <h2>
-            }
-            .into(),
-            (*utils::select_random(LINK_HEADINGS)).into(),
-            el!(</h2>).into(),
-        ])
+            },
+            *utils::select_random(LINK_HEADINGS),
+            el!(</h2>),
+        )
     }
 
     fn tail(&self) -> TemplateIter {
-        el!(</main>).into()
+        let year = rand::random_range(1930..2100).to_string();
+        template_iter!(
+            el!(<p>),
+            format!("© {year} "),
+            self.authors_formatted(),
+            el!(</p>),
+            el!(</main>),
+        )
     }
 }

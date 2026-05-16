@@ -24,6 +24,7 @@ pub enum Field {
 }
 
 pub struct FieldName {
+    #[expect(unused)]
     pub title_case: &'static str,
     pub lower_case: &'static str,
 }
@@ -37,7 +38,7 @@ impl From<(&'static str, &'static str)> for FieldName {
 }
 
 impl Field {
-    pub fn str(&self) -> FieldName {
+    pub fn name(self) -> FieldName {
         match self {
             Field::DataScience => ("Data Science", "data science").into(),
             Field::ScientificComputing => ("Scientific Computing", "scientific computing").into(),

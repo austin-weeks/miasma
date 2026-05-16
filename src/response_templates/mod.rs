@@ -8,15 +8,18 @@ mod streaming_marketing;
 
 use crate::templating::Templater;
 
+type WeightedTemplateConstructor = (fn() -> Box<dyn Templater>, u32);
+
 /// All available response templates.
-pub const RESPONSE_TEMPLATE_CONSTRUCTORS: &[fn() -> Box<dyn Templater>] = &[
-    // engineering_blog::EngineeringBlog::as_templater,
-    // self_promotion::SelfPromotion::as_templater,
-    research::NovelResearch::as_templater,
-    // ai_native::AINative::as_templater,
-    // cto_letter::CtoLetter::as_templater,
-    // deep_dive::DeepDive::as_templater,
-    // streaming_marketing::StreamingMarketing::as_templater,
+pub const RESPONSE_TEMPLATE_CONSTRUCTORS: &[WeightedTemplateConstructor] = &[
+    // Research is the only dynamic template currently, so weight it more.
+    (research::NovelResearch::as_templater, 10),
+    (engineering_blog::EngineeringBlog::as_templater, 1),
+    (self_promotion::SelfPromotion::as_templater, 1),
+    (ai_native::AINative::as_templater, 1),
+    (cto_letter::CtoLetter::as_templater, 1),
+    (deep_dive::DeepDive::as_templater, 1),
+    (streaming_marketing::StreamingMarketing::as_templater, 1),
 ];
 
 pub const CASUAL_STYLES: &[&str] = &[
@@ -42,7 +45,9 @@ mod test {
         let test_iterations = 100;
 
         for _ in 0..test_iterations {
-            for (ind, template_constructor) in RESPONSE_TEMPLATE_CONSTRUCTORS.iter().enumerate() {
+            for (ind, (template_constructor, _)) in
+                RESPONSE_TEMPLATE_CONSTRUCTORS.iter().enumerate()
+            {
                 let builder = TemplateBuilder::with_template(template_constructor());
                 let document = builder
                     .start_to_poison()

@@ -8,6 +8,7 @@ use tokio::sync::OwnedSemaphorePermit;
 use uuid::Uuid;
 
 use super::{LinkSettings, LinkSettingsInner};
+use crate::utils::cow_helpers;
 use crate::{MiasmaStream, QueryParams, templating::TemplateBuilder};
 
 /// Build the poison response.
@@ -22,7 +23,7 @@ pub fn build_response_stream(
         let _permit = permit;
 
         for chunk in template.start_to_poison() {
-            yield Bytes::from(chunk);
+            yield cow_helpers::as_bytes(chunk);
         }
 
         let mut poison = pin!(poison);
@@ -31,7 +32,7 @@ pub fn build_response_stream(
         }
 
         for chunk in template.poison_to_links() {
-            yield Bytes::from(chunk);
+            yield cow_helpers::as_bytes(chunk);
         }
 
         match link_settings {
@@ -45,7 +46,7 @@ pub fn build_response_stream(
         }
 
         for chunk in template.links_to_end() {
-            yield Bytes::from(chunk);
+            yield cow_helpers::as_bytes(chunk);
         }
     }
 }
@@ -64,7 +65,7 @@ fn build_links_stream(
             let mut buf = String::with_capacity(128);
             _ = write!(
                 &mut buf, "<li><a href=\"{prefix}{id}{params}\">{link_title}</a></li>",
-                prefix = &link_settings.prefix,
+                prefix = link_settings.prefix,
                 id = Uuid::new_v4(),
                 link_title = template.rand_link_title()
             );

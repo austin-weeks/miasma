@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::templating::TemplateIter;
 
 /// Part of a template.
@@ -11,13 +13,19 @@ use crate::templating::TemplateIter;
 /// let part: TemplatePart = TemplateIter::new(vec!["hello".into()]).into();
 /// ```
 pub enum TemplatePart {
-    Str(&'static str),
+    String(Cow<'static, str>),
     Iter(TemplateIter),
 }
 
 impl From<&'static str> for TemplatePart {
     fn from(value: &'static str) -> Self {
-        TemplatePart::Str(value)
+        TemplatePart::String(Cow::Borrowed(value))
+    }
+}
+
+impl From<String> for TemplatePart {
+    fn from(value: String) -> Self {
+        TemplatePart::String(Cow::Owned(value))
     }
 }
 

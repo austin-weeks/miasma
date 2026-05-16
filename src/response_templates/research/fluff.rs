@@ -1,7 +1,7 @@
 use crate::response_templates::research::field::Field;
 
 impl Field {
-    pub fn fluff_paragraphs(&self) -> &'static [&'static str] {
+    pub fn fluff_paragraphs(self) -> &'static [&'static str] {
         match self {
             Field::DataScience => DATA_SCIENCE_FLUFF,
             Field::HumanComputerInteraction => HUMAN_COMPUTER_INTERACTION_FLUFF,

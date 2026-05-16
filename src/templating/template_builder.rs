@@ -1,4 +1,4 @@
-use std::iter::once;
+use std::borrow::Cow;
 
 use rand::seq::IndexedRandom;
 
@@ -8,12 +8,25 @@ pub struct TemplateBuilder {
     template: Box<dyn Templater>,
 }
 
+macro_rules! cow_iter {
+    ($val:expr) => {
+        std::iter::once(std::borrow::Cow::from($val))
+    };
+}
+macro_rules! html {
+    ($($tt:tt)*) => {{
+        let el = ::fhtml::concat!($($tt)*);
+        cow_iter! (el)
+    }};
+}
+
 impl TemplateBuilder {
     pub fn with_random_template() -> Self {
         Self {
             template: RESPONSE_TEMPLATE_CONSTRUCTORS
-                .choose(&mut rand::rng())
-                .expect("templates slice should not be empty")(),
+                .choose_weighted(&mut rand::rng(), |t| t.1)
+                .expect("templates slice should not be empty")
+                .0(),
         }
     }
 
@@ -26,52 +39,52 @@ impl TemplateBuilder {
         self.template.tone().random_link_title()
     }
 
-    pub fn start_to_poison(&self) -> impl Iterator<Item = &'static str> {
-        once(fhtml::concat! {
+    pub fn start_to_poison(&self) -> impl Iterator<Item = Cow<'static, str>> {
+        html! {
             <!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
                 <title>
-        })
-        .chain(once(self.template.title()))
-        .chain(once(fhtml::concat! {
+        }
+        .chain(cow_iter!(self.template.title()))
+        .chain(html! {
                 </title>
                 <style>
-        }))
+        })
         .chain(self.template.styles())
-        .chain(once(fhtml::concat! {
+        .chain(html! {
                 </style>
             </head>
             <body>
-        }))
+        })
         .chain(self.template.introduction())
-        .chain(once(fhtml::concat! {
+        .chain(html! {
                 <pre style="white-space: pre-wrap">
                     <code>
-        }))
+        })
     }
 
-    pub fn poison_to_links(&self) -> impl Iterator<Item = &'static str> {
-        once(fhtml::concat! {
+    pub fn poison_to_links(&self) -> impl Iterator<Item = Cow<'static, str>> {
+        html! {
                     </code>
                 </pre>
-        })
+        }
         .chain(self.template.follow_up())
-        .chain(once(fhtml::concat! {
+        .chain(html! {
                 <ul>
-        }))
-    }
-    pub fn links_to_end(&self) -> impl Iterator<Item = &'static str> {
-        once(fhtml::concat! {
-                </ul>
         })
+    }
+    pub fn links_to_end(&self) -> impl Iterator<Item = Cow<'static, str>> {
+        html! {
+                </ul>
+        }
         .chain(self.template.tail())
-        .chain(once(fhtml::concat! {
+        .chain(html! {
             </body>
             </html>
-        }))
+        })
     }
 }
 
@@ -111,9 +124,9 @@ mod test {
 
         let actual = builder
             .start_to_poison()
-            .chain(once("POISON"))
+            .chain(cow_iter!("POISON"))
             .chain(builder.poison_to_links())
-            .chain(once("LINKS"))
+            .chain(cow_iter!("LINKS"))
             .chain(builder.links_to_end())
             .collect::<String>();
 

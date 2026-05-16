@@ -1,3 +1,5 @@
+use std::{borrow::Cow, mem};
+
 use crate::templating::TemplatePart;
 
 /// Iterates over parts of a template.
@@ -23,15 +25,16 @@ impl TemplateIter {
 }
 
 impl Iterator for TemplateIter {
-    type Item = &'static str;
+    type Item = Cow<'static, str>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        #[allow(clippy::question_mark)]
         let next = match self.parts.get_mut(self.current) {
             None => return None,
             Some(p) => match p {
-                TemplatePart::Str(s) => {
+                TemplatePart::String(s) => {
                     self.current += 1;
-                    *s
+                    mem::take(s)
                 }
                 #[allow(clippy::single_match_else)]
                 TemplatePart::Iter(i) => match i.next() {
@@ -80,7 +83,7 @@ mod test {
         let iter: TemplateIter = ["1", "2", "3"].into();
         let expected = vec!["1", "2", "3"];
 
-        let actual: Vec<&str> = iter.collect();
+        let actual: Vec<_> = iter.collect();
         assert_eq!(actual, expected);
     }
 
@@ -95,7 +98,7 @@ mod test {
         ]);
         let expected = vec!["1", "2", "3", "4", "5", "6", "7"];
 
-        let actual: Vec<&str> = iter.collect();
+        let actual: Vec<_> = iter.collect();
         assert_eq!(actual, expected);
     }
 
