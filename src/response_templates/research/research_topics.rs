@@ -1,5 +1,11 @@
 use super::Field;
 
+pub struct ResearchTopic {
+    title_case: &'static str,
+    lower_case: &'static str,
+    field: Field,
+}
+
 pub const RESEARCH_TOPICS: &[(&str, Field)] = &[
     (
         "Distributed Systems Consistency Models",

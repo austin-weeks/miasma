@@ -1,10 +1,9 @@
 use rand::seq::IndexedRandom;
 
-/// Select a `n` elements randomly from `list`, where `n` is a random number in `range`.
+/// Select `n` unique elements randomly from `list`, where `n` is a random number in `range`.
 ///
-/// # Panics
-///
-/// Panics if `list` is empty.
+/// If `list` does not contain enough unique elements to meet the selected count,
+/// all unique elements will be returned.
 pub fn select_random_range<T, R>(list: &[T], range: R) -> Vec<T>
 where
     T: PartialEq + Clone,
@@ -21,7 +20,9 @@ where
         }
         tries += 1;
 
-        let pick = list.choose(&mut rand::rng()).expect("");
+        let Some(pick) = list.choose(&mut rand::rng()) else {
+            return out;
+        };
         if !out.contains(pick) {
             out.push(pick.clone());
         }
@@ -44,10 +45,9 @@ mod test {
     use super::*;
 
     #[test]
-    #[should_panic]
-    fn panics_on_empty_list() {
+    fn returns_empty_vec_on_empty_list() {
         let list: &[usize] = &[];
-        select_random_range(list, 1..=1);
+        assert!(select_random_range(list, 1..=1).is_empty());
     }
 
     #[test]

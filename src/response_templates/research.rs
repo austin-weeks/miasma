@@ -53,7 +53,7 @@ impl NovelResearch {
     }
 
     fn intro_fluff_paragraphs(&self) -> TemplateIter {
-        let fluff_paragraphs = utils::select_random_range(self.field.fluff_paragraphs(), 0..=2);
+        let fluff_paragraphs = utils::select_random_range(self.field.fluff_paragraphs(), 1..=3);
 
         let mut vec = Vec::with_capacity(fluff_paragraphs.len() * 3); // <p> + text + </p>
         for fluff in fluff_paragraphs {

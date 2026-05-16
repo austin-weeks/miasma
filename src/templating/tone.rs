@@ -1,6 +1,7 @@
-use rand::seq::IndexedRandom;
-
-use crate::response_templates::{ACADEMIC_STYLES, CASUAL_STYLES, ENTERPRISE_STYLES};
+use crate::{
+    response_templates::{ACADEMIC_STYLES, CASUAL_STYLES, ENTERPRISE_STYLES},
+    templating::utils::select_random,
+};
 
 /// The general tone of the template's text.
 pub enum TemplateTone {
@@ -11,23 +12,19 @@ pub enum TemplateTone {
 
 impl TemplateTone {
     pub fn random_link_title(&self) -> &'static str {
-        match self {
+        *select_random(match self {
             TemplateTone::Enterprise => ENTERPRISE_LINK_TITLES,
             TemplateTone::Casual => CASUAL_LINK_TITLES,
             TemplateTone::Academic => ACADEMIC_LINK_TITLES,
-        }
-        .choose(&mut rand::rng())
-        .unwrap_or(&"")
+        })
     }
 
     pub fn random_style(&self) -> &'static str {
-        match self {
+        *select_random(match self {
             TemplateTone::Enterprise => ENTERPRISE_STYLES,
             TemplateTone::Casual => CASUAL_STYLES,
             TemplateTone::Academic => ACADEMIC_STYLES,
-        }
-        .choose(&mut rand::rng())
-        .unwrap_or(&"")
+        })
     }
 }
 
