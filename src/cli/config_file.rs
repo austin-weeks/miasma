@@ -36,6 +36,7 @@ pub struct ConfigFile {
 pub struct ServerFileConfig {
     pub host: Option<String>,
     pub port: Option<u16>,
+    #[cfg(unix)]
     pub unix_socket: Option<String>,
 }
 #[derive(Deserialize)]
@@ -60,7 +61,8 @@ pub fn load_config_file(file_path: &str) -> Result<ConfigFile, ConfigFileError> 
         Err(ConfigFileError::UnsupportedLanguage)
     }?;
     #[cfg(not(unix))]
-    if conf.server.unix_socket.is_some() {
+    if config.server.unix_socket.is_some() {
+        use colored::Colorize;
         eprintln!(
             "{}: cannot use unix sockets on non-unix os - ignoring",
             "warning".yellow()

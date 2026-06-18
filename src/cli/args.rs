@@ -142,6 +142,7 @@ impl AppArgs {
             }),
         };
 
+        #[cfg(unix)]
         let unix_socket = if merger.arg_provided("unix_socket") {
             self.unix_socket
         } else {
@@ -156,6 +157,7 @@ impl AppArgs {
             host: merger
                 .merge("host", self.host, config.server.host)
                 .unwrap_or_else(|| String::from(DEFAULT_HOST)),
+            #[cfg(unix)]
             unix_socket,
             max_in_flight: merger
                 .merge("max_in_flight", self.max_in_flight, config.max_in_flight)
@@ -484,6 +486,7 @@ mod test {
             assert_eq!(result.config_file, Some(config_file_path));
             assert_eq!(result.port, DEFAULT_PORT);
             assert_eq!(result.host, DEFAULT_HOST.to_owned());
+            #[cfg(unix)]
             assert_eq!(result.unix_socket, None);
             assert_eq!(result.max_in_flight, miasma::DEFAULT_MAX_IN_FLIGHT);
             assert_eq!(result.link_prefix, "/".to_owned());
