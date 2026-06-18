@@ -1,10 +1,10 @@
 mod cli;
 
 use cli::{App, AppArgs};
-use miasma::MiasmaError;
+use colored::Colorize;
 use std::env;
 
-fn main() -> Result<(), MiasmaError> {
+fn main() {
     // Print the banner if the user is viewing help menu
     if env::args().any(|arg| arg == "-h" || arg == "--help") {
         cli::print_miasma_ascii_art();
@@ -13,7 +13,7 @@ fn main() -> Result<(), MiasmaError> {
     let args = AppArgs::parse_args();
     cli::print_miasma_ascii_art();
 
-    tokio::runtime::Builder::new_multi_thread()
+    let result = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_name("miasma-thread")
         .build()
@@ -31,5 +31,8 @@ fn main() -> Result<(), MiasmaError> {
             args.print_config_info();
 
             app.run(shutdown_signal).await
-        })
+        });
+    if let Err(e) = result {
+        eprintln!("{}: {e}", "Error".red());
+    }
 }

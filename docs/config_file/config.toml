@@ -1,0 +1,18 @@
+max_in_flight = 20
+link_prefix = "/bots"
+link_count = 5
+max_depth = 10
+force_gzip = true
+unsafe_allow_html = false
+poison_source = "https://example.com"
+
+[server]
+host = "127.0.0.1"
+port = 9999
+unix_socket = "/tmp/miasma.sock" # unix only
+
+[metrics]
+db_path = "miasma.db"
+username = "admin"
+password = "change-me"
+endpoint = "/request-metrics"

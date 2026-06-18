@@ -185,10 +185,11 @@ _Miasma_ offers the ability to track scraper request counts per unique User-Agen
 
 ## Configuration
 
-_Miasma_ can be configured via its CLI options:
+_Miasma_ can be configured via CLI flags or a [config file](./docs/config_file/).
 
 | Option                | Default                               | Description                                                                                                                                                                                                                                                             |
 | --------------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `config-file`         |                                       | Load configuration options from a file at the specified file path. YAML, TOML, and JSON formats are supported. See [docs](./docs/config_file/) for examples.                                                                                                            |
 | `port`                | `9999`                                | The port the server should bind to.                                                                                                                                                                                                                                     |
 | `host`                | `localhost`                           | The host address the server should bind to.                                                                                                                                                                                                                             |
 | `unix-socket`         |                                       | Bind to a Unix domain socket rather than a TCP address. _Only available on Unix-like systems._                                                                                                                                                                          |

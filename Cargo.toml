@@ -3,7 +3,7 @@ name = "miasma"
 description = "Trap malicious AI web scrapers in an endless pit of poisoned training data."
 keywords = ["ai", "anti-ai", "web-scraping", "cli", "server"]
 categories = ["artificial-intelligence", "command-line-utilities", "development-tools", "security"]
-version = "0.2.9"
+version = "0.3.0"
 edition = "2024"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/austin-weeks/miasma"
@@ -30,7 +30,7 @@ thiserror = "2.0.18"
 tokio = { version = "1.50.0", features = ["rt-multi-thread", "signal"] }
 tokio-util = { version = "0.7.18", features = ["io"] }
 toml = { version = "1.1.2", features = [ "serde" ] }
-url = "2.5.8"
+url = { version = "2.5.8", features = ["serde"] }
 uuid = { version = "1.22.0", features = ["v4"] }
 
 [dev-dependencies]
@@ -40,6 +40,7 @@ gag = "1.0.0"
 serial_test = "3.4.0"
 scraper = "0.26.0"
 tempfile = "3.27.0"
+temp-env = "0.3.6"
 
 # On Linux, use default TLS
 [target.'cfg(target_os = "linux")'.dependencies]

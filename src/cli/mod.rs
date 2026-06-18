@@ -2,6 +2,7 @@ mod app;
 mod args;
 mod art;
 mod calculate_nodes;
+mod config_file;
 mod version_check;
 
 pub use app::*;

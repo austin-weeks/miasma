@@ -1390,7 +1390,7 @@ checksum = "6b947ae49db0d222b1dbc6b113ce7248a3fc3a6ca21b696717bfc000ba4484d8"
 
 [[package]]
 name = "miasma"
-version = "0.2.9"
+version = "0.3.0"
 dependencies = [
  "async-compression",
  "async-stream",
@@ -1413,6 +1413,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "serial_test",
+ "temp-env",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
@@ -2376,6 +2377,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "temp-env"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96374855068f47402c3121c6eed88d29cb1de8f3ab27090e273e420bdabcf050"
+dependencies = [
+ "parking_lot",
+]
+
+[[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2710,6 +2720,7 @@ dependencies = [
  "idna",
  "percent-encoding",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]
