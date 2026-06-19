@@ -36,7 +36,6 @@ pub struct ConfigFile {
 pub struct ServerFileConfig {
     pub host: Option<String>,
     pub port: Option<u16>,
-    #[cfg(unix)]
     pub unix_socket: Option<String>,
 }
 #[derive(Deserialize)]
@@ -44,7 +43,7 @@ pub struct MetricsFileConfig {
     pub db_path: String,
     pub username: String,
     pub password: String,
-    pub endpoint: String,
+    pub endpoint: Option<String>,
 }
 
 pub fn load_config_file(file_path: &str) -> Result<ConfigFile, ConfigFileError> {
@@ -94,13 +93,12 @@ mod test {
         let metrics = config.metrics.unwrap();
 
         assert_eq!(metrics.db_path, "miasma.db");
-        assert_eq!(metrics.endpoint, "/serve-metrics");
+        assert_eq!(metrics.endpoint, Some("/serve-metrics".into()));
         assert_eq!(metrics.username, "admin");
         assert_eq!(metrics.password, "admin-password");
         assert_eq!(config.server.port, Some(8080));
-        assert_eq!(config.server.host, Some("127.0.0.1".to_owned()));
-        #[cfg(unix)]
-        assert_eq!(config.server.unix_socket, Some("miasma.sock".to_owned()));
+        assert_eq!(config.server.host, Some("127.0.0.1".into()));
+        assert_eq!(config.server.unix_socket, Some("miasma.sock".into()));
     }
 
     #[test]

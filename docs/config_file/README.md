@@ -3,7 +3,7 @@
 _Miasma_ can be configured via a configuration file rather than specifying each setting as a CLI flag.
 
 ```sh
-miasma --config-file <path_to_config_file>
+miasma -f <path_to_config_file>
 ```
 
 The following file formats are supported:

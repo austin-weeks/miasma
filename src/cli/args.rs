@@ -16,8 +16,9 @@ use crate::cli::{
     config_file::{ConfigFile, load_config_file},
 };
 
-pub const DEFAULT_HOST: &str = "localhost";
-pub const DEFAULT_PORT: u16 = 9999;
+const DEFAULT_HOST: &str = "localhost";
+const DEFAULT_PORT: u16 = 9999;
+const DEFAULT_METRICS_ENDPOINT: &str = "/metrics";
 
 #[derive(Parser, Debug, Clone)]
 #[command(
@@ -81,11 +82,14 @@ pub struct AppArgs {
 /// If user provided a CLI flag, it overrides config file values.
 struct OverrideMerger(ArgMatches);
 impl OverrideMerger {
-    fn merge<T>(&self, field: &str, cli_value: T, config_value: Option<T>) -> Option<T> {
-        if self.arg_provided(field) {
-            Some(cli_value)
+    fn merge<T>(&self, field: &str, cli_value: T, config_value: Option<T>) -> T {
+        // Use config file value if present and not overridden
+        if let Some(val) = config_value
+            && !self.arg_provided(field)
+        {
+            val
         } else {
-            config_value
+            cli_value
         }
     }
 
@@ -128,62 +132,42 @@ impl AppArgs {
         config_file_path: String,
     ) -> Self {
         let metrics_args_provided = merger.arg_provided("metrics_db_path")
-            || merger.arg_provided("metrics_credentials")
+            || merger.arg_provided("metrics_username")
+            || merger.arg_provided("metrics_password")
             || merger.arg_provided("metrics_endpoint");
         let metrics = match (metrics_args_provided, config.metrics) {
             (true, _) | (false, None) => self.metrics,
             (false, Some(m)) => Some(MetricsConfig {
                 metrics_db_path: Some(m.db_path),
-                metrics_credentials: Some(MetricsCredentials {
-                    username: m.username,
-                    password: m.password,
-                }),
-                metrics_endpoint: m.endpoint,
+                metrics_username: Some(m.username),
+                metrics_password: Some(m.password),
+                metrics_endpoint: m
+                    .endpoint
+                    .unwrap_or_else(|| DEFAULT_METRICS_ENDPOINT.to_owned()),
             }),
-        };
-
-        #[cfg(unix)]
-        let unix_socket = if merger.arg_provided("unix_socket") {
-            self.unix_socket
-        } else {
-            config.server.unix_socket
         };
 
         Self {
             config_file: Some(config_file_path),
-            port: merger
-                .merge("port", self.port, config.server.port)
-                .unwrap_or(DEFAULT_PORT),
-            host: merger
-                .merge("host", self.host, config.server.host)
-                .unwrap_or_else(|| String::from(DEFAULT_HOST)),
+            port: merger.merge("port", self.port, config.server.port),
+            host: merger.merge("host", self.host, config.server.host),
             #[cfg(unix)]
-            unix_socket,
-            max_in_flight: merger
-                .merge("max_in_flight", self.max_in_flight, config.max_in_flight)
-                .unwrap_or(miasma::DEFAULT_MAX_IN_FLIGHT),
-            link_prefix: merger
-                .merge("link_prefix", self.link_prefix, config.link_prefix)
-                .unwrap_or_else(|| String::from("/")),
-            link_count: merger
-                .merge("link_count", self.link_count, config.link_count)
-                .unwrap_or(miasma::DEFAULT_LINK_COUNT),
-            max_depth: merger
-                .merge("max_depth", self.max_depth, config.max_depth)
-                .unwrap_or_default(),
-            force_gzip: merger
-                .merge("force_gzip", self.force_gzip, config.force_gzip)
-                .unwrap_or_default(),
-            unsafe_allow_html: merger
-                .merge(
-                    "unsafe_allow_html",
-                    self.unsafe_allow_html,
-                    config.unsafe_allow_html,
-                )
-                .unwrap_or_default(),
-            poison_source: merger
-                .merge("poison_source", self.poison_source, config.poison_source)
-                .unwrap_or_else(|| Url::parse(miasma::DEFAULT_POISON_SOURCE).unwrap()),
+            unix_socket: merger.merge(
+                "unix_socket",
+                self.unix_socket,
+                Some(config.server.unix_socket),
+            ),
+            max_in_flight: merger.merge("max_in_flight", self.max_in_flight, config.max_in_flight),
+            link_prefix: merger.merge("link_prefix", self.link_prefix, config.link_prefix),
+            link_count: merger.merge("link_count", self.link_count, config.link_count),
+            max_depth: merger.merge("max_depth", self.max_depth, config.max_depth),
+            force_gzip: merger.merge("force_gzip", self.force_gzip, config.force_gzip),
+            unsafe_allow_html: merger.merge(
+                "unsafe_allow_html",
+                self.unsafe_allow_html,
+                config.unsafe_allow_html,
+            ),
+            poison_source: merger.merge("poison_source", self.poison_source, config.poison_source),
             metrics,
         }
     }
@@ -229,20 +213,21 @@ impl AppArgs {
             eprintln!("{} HTML escaping is disabled...", "Warning:".red());
         }
 
-        if let Some(metrics) = &self.metrics {
+        if let Some(MetricsConfig {
+            metrics_db_path: Some(db_path),
+            metrics_username: Some(username),
+            metrics_endpoint,
+            ..
+        }) = &self.metrics
+        {
             eprintln!(
                 "Request metrics are available at {} with credentials {}.",
-                metrics.metrics_endpoint.blue(),
-                metrics
-                    .metrics_credentials
-                    .as_ref()
-                    .unwrap()
-                    .to_string()
-                    .blue(),
+                metrics_endpoint.blue(),
+                format!("{username}:******").blue(),
             );
             eprintln!(
                 "Metrics will be written to the SQLite database at {}.",
-                metrics.metrics_db_path.as_ref().unwrap().blue(),
+                db_path.blue(),
             );
         } else {
             eprintln!("Metrics are disabled and will not be collected...");
@@ -267,19 +252,14 @@ impl AppArgs {
         if let Some(d) = self.max_depth.0 {
             builder.max_depth(d);
         }
-        if let Some(m) = &self.metrics {
-            let credentials = m
-                .metrics_credentials
-                .as_ref()
-                .expect("credentials should be Some if MetricsConfig is Some");
-            builder.metrics(
-                m.metrics_db_path
-                    .as_ref()
-                    .expect("db path should be Some if MetricsConfig is Some"),
-                &m.metrics_endpoint,
-                &credentials.username,
-                &credentials.password,
-            );
+        if let Some(MetricsConfig {
+            metrics_db_path: Some(db_path),
+            metrics_username: Some(username),
+            metrics_password: Some(password),
+            metrics_endpoint,
+        }) = &self.metrics
+        {
+            builder.metrics(db_path, metrics_endpoint, username, password);
         }
 
         builder.build()
@@ -318,55 +298,27 @@ impl FromStr for MaxDepth {
 pub struct MetricsConfig {
     #[expect(clippy::doc_markdown)]
     /// Path to SQLite database file (e.g. 'miasma.db')
-    #[arg(long, requires = "metrics_credentials")]
+    #[arg(long, requires_all = ["metrics_username", "metrics_password"])]
     #[arg(help_heading = "Metrics Options")]
     pub metrics_db_path: Option<String>,
 
-    /// Basic auth credentials required to access request metrics -
-    /// must match format '<username>:<password>'
+    /// Basic auth username required to access request metrics
     #[arg(long, requires = "metrics_db_path")]
     #[arg(help_heading = "Metrics Options")]
-    pub metrics_credentials: Option<MetricsCredentials>,
+    pub metrics_username: Option<String>,
+
+    /// Basic auth password required to access request metrics
+    #[arg(long, requires = "metrics_db_path")]
+    #[arg(help_heading = "Metrics Options")]
+    pub metrics_password: Option<String>,
 
     /// Endpoint at which request metrics will be served
     #[arg(
-        long, default_value = "/metrics",
-        requires_all = ["metrics_db_path", "metrics_credentials"],
+        long, default_value = DEFAULT_METRICS_ENDPOINT,
+        requires_all = ["metrics_db_path", "metrics_username", "metrics_password"],
     )]
     #[arg(help_heading = "Metrics Options")]
     pub metrics_endpoint: String,
-}
-
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-pub struct MetricsCredentials {
-    username: String,
-    password: String,
-}
-
-impl Display for MetricsCredentials {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("{}:******", self.username))
-    }
-}
-
-impl FromStr for MetricsCredentials {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let Some((username, password)) = s.split_once(':') else {
-            return Err("credentials must match format '<username>:<password>'");
-        };
-        if username.is_empty() {
-            return Err("username must not be empty");
-        }
-        if password.is_empty() {
-            return Err("password must not be empty");
-        }
-        Ok(Self {
-            username: username.to_owned(),
-            password: password.to_owned(),
-        })
-    }
 }
 
 #[cfg(test)]
@@ -393,10 +345,8 @@ mod test {
 
             metrics: Some(MetricsConfig {
                 metrics_db_path: Some("miasma.db".to_owned()),
-                metrics_credentials: Some(MetricsCredentials {
-                    username: "admin".to_owned(),
-                    password: "admin".to_owned(),
-                }),
+                metrics_username: Some("admin".to_owned()),
+                metrics_password: Some("admin".to_owned()),
                 metrics_endpoint: "/serve-metrics".to_owned(),
             }),
 
@@ -442,27 +392,6 @@ mod test {
         };
 
         assert_eq!(config.address(), "127.0.0.1:8080");
-    }
-
-    #[test]
-    fn metrics_credentials_validation() {
-        let cases = [
-            ("", false, ("", "")),
-            ("usernamepassword", false, ("", "")),
-            (":password", false, ("", "")),
-            ("username:", false, ("", "")),
-            ("username:password", true, ("username", "password")),
-        ];
-
-        for (input, valid, (uname, pword)) in cases {
-            match MetricsCredentials::from_str(input) {
-                Err(_) => assert!(!valid),
-                Ok(MetricsCredentials { username, password }) => {
-                    assert_eq!(username, uname);
-                    assert_eq!(password, pword);
-                }
-            }
-        }
     }
 
     // Because env variables are modified, tests need to run in parallel
@@ -518,14 +447,13 @@ mod test {
                 server: ServerFileConfig {
                     host: Some("test-host".into()),
                     port: Some(7000),
-                    #[cfg(unix)]
                     unix_socket: Some("test.sock".into()),
                 },
                 metrics: Some(MetricsFileConfig {
                     db_path: "test.db".into(),
                     username: "test".into(),
                     password: "test".into(),
-                    endpoint: "/test".into(),
+                    endpoint: Some("/test".into()),
                 }),
             };
 
@@ -540,12 +468,11 @@ mod test {
             assert_eq!(result.host, "test-host");
             assert_eq!(result.port, 7000);
             #[cfg(unix)]
-            assert_eq!(result.unix_socket, Some("test.sock".to_owned()));
+            assert_eq!(result.unix_socket, Some("test.sock".into()));
             let metrics = result.metrics.unwrap();
-            let credentials = metrics.metrics_credentials.unwrap();
-            assert_eq!(metrics.metrics_db_path, Some("test.db".to_owned()));
-            assert_eq!(credentials.username, "test");
-            assert_eq!(credentials.password, "test");
+            assert_eq!(metrics.metrics_db_path, Some("test.db".into()));
+            assert_eq!(metrics.metrics_username, Some("test".into()));
+            assert_eq!(metrics.metrics_password, Some("test".into()));
             assert_eq!(metrics.metrics_endpoint, "/test");
         }
 
@@ -588,7 +515,6 @@ mod test {
                 server: ServerFileConfig {
                     host: Some("BAD".into()),
                     port: Some(0),
-                    #[cfg(unix)]
                     unix_socket: Some("BAD".into()),
                 },
                 ..Default::default()
@@ -634,8 +560,10 @@ mod test {
                 "miasma",
                 "--metrics-db-path",
                 "miasma.db",
-                "--metrics-credentials",
-                "admin:admin",
+                "--metrics-username",
+                "admin",
+                "--metrics-password",
+                "password",
                 "--metrics-endpoint",
                 "/metrics",
             ];
@@ -647,17 +575,16 @@ mod test {
                     db_path: "BAD".into(),
                     username: "BAD".into(),
                     password: "BAD".into(),
-                    endpoint: "BAD".into(),
+                    endpoint: Some("BAD".into()),
                 }),
                 ..Default::default()
             };
             let result = args.merge_config_file(config, &OverrideMerger(matches), String::new());
 
             let metrics = result.metrics.unwrap();
-            let credentials = metrics.metrics_credentials.unwrap();
             assert_eq!(metrics.metrics_db_path, Some("miasma.db".into()));
-            assert_eq!(credentials.username, "admin");
-            assert_eq!(credentials.password, "admin");
+            assert_eq!(metrics.metrics_username, Some("admin".into()));
+            assert_eq!(metrics.metrics_password, Some("password".into()));
             assert_eq!(metrics.metrics_endpoint, "/metrics");
         }
     }
