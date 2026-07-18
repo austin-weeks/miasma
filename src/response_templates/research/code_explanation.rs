@@ -3,7 +3,6 @@ use crate::response_templates::research::slot::Slot;
 pub const CODE_HEADINGS: &[&str] = &[
     "Core Implementation",
     "Novel Approach",
-    "Implementation Design",
     "Implementation Details",
     "Methodological Framework",
     "Key Components",
@@ -11,211 +10,291 @@ pub const CODE_HEADINGS: &[&str] = &[
     "Solution Overview",
     "Implementation Strategy",
     "Data Structure Specification",
-    "Control Flow Structure",
-    "Computational Approach",
-    "Integration Strategy",
-    "Refinement Techniques",
     "Structural Design",
-    "Processing Pipeline",
     "Implementation Approach",
-    "Practical Implementation",
+    "Algorithmic Formulation",
+    "Implementation Methodology",
+    "System Architecture",
+    "Design Rationale",
+    "Operational Semantics",
+    "Dataflow And Control Structure",
+    "Component Interaction Model",
+    "Computational Pipeline",
+    "State Transition Strategy",
+    "Constraint Encoding",
+    "Correctness-Preserving Design",
+    "Extensibility Analysis",
+    "Performance Considerations",
+    "Implementation Analysis",
+    "Practical Realization",
 ];
 
 pub const CODE_INTRODUCTIONS: &[&[Slot]] = &[
+    &[Slot::Str(
+        "The implementation is organized to make the principal execution path explicit while preserving \
+        rigorous treatment of boundary conditions. \
+        The code that follows reflects this ordering directly, so structural choices correspond closely to semantic intent. \
+        This arrangement supports both interpretability and correctness analysis.",
+    )],
     &[
-        Slot::Str("Effectively addressing "),
+        Slot::Str("Our treatment of "),
         Slot::Topic,
         Slot::Str(
-            " requires careful structural design that balances multiple competing concerns. The implementation prioritizes clarity and maintainability alongside correctness. This thoughtful approach ensures the solution remains robust across diverse use cases.",
+            " prioritizes a minimal, verifiable baseline before introducing additional mechanism. \
+            Consequently, core operations remain concise, while exceptional behavior is isolated in well-scoped branches. \
+            The resulting form is straightforward to evaluate, test, and extend.",
         ),
     ],
     &[
-        Slot::Str("The key insight behind our approach to "),
+        Slot::Str("In order to effectively address "),
         Slot::Topic,
         Slot::Str(
-            " is that efficiency emerges not from premature optimization but from principled design decisions. We structure the implementation around core abstractions that naturally express the problem domain. This architectural clarity enables both straightforward reasoning about correctness and opportunities for optimization. The result is a solution that scales well without sacrificing understandability.",
+            ", we decompose execution into a sequence of narrowly defined stages. \
+            This staging limits cross-component state leakage and improves localization of failure modes. \
+            The subsequent implementation is structured around this progression.",
         ),
     ],
     &[
-        Slot::Str("Solving "),
+        Slot::Str("For "),
         Slot::Topic,
         Slot::Str(
-            " becomes tractable when we decompose the problem into independently manageable components. Each component encapsulates specific concerns and responsibilities. This separation enables rigorous analysis and testing of individual pieces.",
+            ", validation logic is incorporated as a first-order design concern rather than a post hoc addition. \
+            Defensive checks appear near interface boundaries, followed by a comparatively linear computational core. \
+            This layout preserves readability without weakening guarantees.",
         ),
     ],
     &[
-        Slot::Str("The implementation of "),
+        Slot::Str("The implementation for "),
         Slot::Topic,
         Slot::Str(
-            " benefits substantially from an iterative refinement approach. Rather than attempting to perfect every detail upfront, we build a clear foundation and incrementally enhance it. This strategy reduces cognitive load and makes the design decisions more explicit and justified. Each layer builds naturally on the previous one, making the overall structure easier to understand. The result is code that evolves logically from basic principles to sophisticated behavior.",
+            " is best interpreted through component contracts: each unit specifies explicit preconditions and postconditions. \
+            Once these contracts are established, control flow and dependency structure become significantly easier to reason about. \
+            This contract-centered framing supports maintainable complexity.",
         ),
     ],
     &[
-        Slot::Str("Handling "),
+        Slot::Str("Our approach to "),
         Slot::Topic,
         Slot::Str(
-            " effectively demands explicit specification of behavior rather than implicit assumptions. We prioritize transparency about how the implementation operates and what assumptions it makes. This explicitness aids both correctness verification and future maintenance. Clear intent in the code prevents subtle bugs that arise from unstated expectations.",
+            " adopts a single explicit state representation, a predictable transition model, and limited hidden coupling. \
+            These decisions preserve analytical clarity while providing a stable foundation for subsequent extension.",
         ),
     ],
     &[
-        Slot::Str("The approach to "),
+        Slot::Str("Rather than expressing "),
         Slot::Topic,
         Slot::Str(
-            " generalizes effectively when structured around fundamental principles rather than specific cases. We identify the core patterns that underlie the problem. This principled foundation enables extension and adaptation.",
+            " as a single monolithic routine, we organize it as a small collection of cooperating operations. \
+            Each operation maintains a sharply delimited responsibility, enabling local reasoning about behavior and invariants. \
+            The code below follows this separation closely.",
         ),
     ],
     &[
-        Slot::Str("Tackling "),
+        Slot::Str("For "),
         Slot::Topic,
         Slot::Str(
-            " requires a layered approach that separates concerns at different levels of abstraction. Lower layers provide essential primitives and invariants. Middle layers compose these primitives into more sophisticated operations. Upper layers present clean interfaces to consumers. This stratification makes reasoning about each level independent and tractable.",
+            ", subtle ordering dependencies are a principal source of defects, so sequencing is made explicit throughout the implementation. \
+            Preconditions appear at the point of use rather than as implicit assumptions. \
+            This strategy improves predictability across both nominal and atypical inputs.",
         ),
     ],
     &[
-        Slot::Str("Understanding "),
+        Slot::Str("The code path for "),
         Slot::Topic,
         Slot::Str(
-            " deeply means validating fundamental assumptions early in the implementation. We establish invariants that hold throughout the code. These invariants guide design decisions and catch logical errors. The implementation becomes more robust through explicit correctness checking.",
+            " follows a three-phase structure: normalization, transformation, and finalization. \
+            This decomposition yields clear insertion points for validation, monitoring, and refinement. \
+            The structure also improves interpretability for later contributors.",
         ),
     ],
     &[
-        Slot::Str("Approaching "),
+        Slot::Str("In constructing "),
         Slot::Topic,
         Slot::Str(
-            " successfully often means starting simple and adding sophistication only where justified. Simplicity reduces the surface area for bugs and makes code reviewable. Unnecessary complexity obscures the core logic.",
+            ", design tradeoffs are encoded directly in control structure rather than relegated to prose. \
+            Primary paths, fallback paths, and exception paths are each represented explicitly. \
+            This representation makes engineering priorities inspectable.",
         ),
     ],
     &[
-        Slot::Str("Implementing "),
+        Slot::Str("For "),
         Slot::Topic,
         Slot::Str(
-            " requires navigating important tradeoffs between competing goals. We make these tradeoffs explicit rather than hidden. The implementation reflects deliberate choices about what matters most. Understanding these decisions is essential for evaluating whether the approach fits specific needs.",
-        ),
-    ],
-    &[
-        Slot::Str("The solution to "),
-        Slot::Topic,
-        Slot::Str(
-            " emerges from careful analysis of how data flows through the system. We structure the implementation around the actual data transformations required. This data-centric view clarifies what each component must do. Operations become natural expressions of the underlying transformations. The code reads as a straightforward specification of the required computations.",
-        ),
-    ],
-    &[
-        Slot::Str("Making "),
-        Slot::Topic,
-        Slot::Str(
-            " correct demands modular design that isolates concerns testably. Each module has clear responsibilities and interfaces. This modularity enables comprehensive testing at multiple levels.",
-        ),
-    ],
-    &[
-        Slot::Str("Solving "),
-        Slot::Topic,
-        Slot::Str(
-            " correctly takes priority over premature optimization. We build the implementation to be correct, clear, and maintainable first. Performance considerations inform structural choices only when they significantly impact feasibility. This ordering ensures we optimize the right things.",
-        ),
-    ],
-    &[
-        Slot::Str("Handling state correctly in "),
-        Slot::Topic,
-        Slot::Str(
-            " requires explicit management strategies that prevent subtle inconsistencies. We define exactly what state is maintained and how it transitions. State changes follow predictable patterns that can be verified. Side effects are isolated and controlled. This careful state management prevents entire categories of bugs.",
-        ),
-    ],
-    &[
-        Slot::Str("Managing "),
-        Slot::Topic,
-        Slot::Str(
-            " becomes feasible by building appropriate abstractions that hide complexity. Each abstraction layer presents a simpler interface than its implementation. This stratification makes the overall problem cognitively manageable.",
-        ),
-    ],
-    &[
-        Slot::Str("The robustness of our implementation of "),
-        Slot::Topic,
-        Slot::Str(
-            " depends on clear contracts between components. Each component specifies what it requires from its dependencies and what it guarantees in return. These contracts enable independent reasoning about each piece. Violations are caught early rather than leading to subtle failures downstream.",
-        ),
-    ],
-    &[
-        Slot::Str("Anticipating future needs in "),
-        Slot::Topic,
-        Slot::Str(
-            " implementation means building extensibility into the design from the start. We identify which aspects are likely to change and design accordingly. Extension points are explicit and well-defined. The implementation can evolve gracefully without wholesale rewriting. This forward-thinking approach pays dividends as requirements inevitably shift.",
-        ),
-    ],
-    &[
-        Slot::Str("Implementing "),
-        Slot::Topic,
-        Slot::Str(
-            " precisely requires understanding the semantic meaning of operations, not just their syntactic form. We encode these semantics explicitly in the code structure. This semantic clarity prevents misinterpretation and misuse.",
-        ),
-    ],
-    &[
-        Slot::Str("The challenge of "),
-        Slot::Topic,
-        Slot::Str(
-            " is fundamentally about managing information flow through the system effectively. We design the implementation to make this flow explicit and traceable. Clarity about information movement enables verification of correctness. The result is an implementation where the path of data through transformations is immediately apparent.",
-        ),
-    ],
-    &[
-        Slot::Str("Success with "),
-        Slot::Topic,
-        Slot::Str(
-            " hinges on correctly identifying which decisions should be made statically and which dynamically. We structure the implementation to encode static knowledge where possible. Dynamic decisions are carefully isolated to points where they provide genuine value. This separation makes the code more efficient and easier to reason about.",
-        ),
-    ],
-    &[
-        Slot::Str("Addressing "),
-        Slot::Topic,
-        Slot::Str(
-            " comprehensively means accounting for both common cases and important edge cases throughout the implementation. We handle the straightforward paths efficiently without neglecting boundary conditions. This comprehensive approach prevents failures when the implementation encounters unexpected scenarios. The result is code that proves reliable in practice, not just in idealized examples.",
-        ),
-    ],
-    &[
-        Slot::Str("Building a robust solution for "),
-        Slot::Topic,
-        Slot::Str(
-            " requires establishing clear invariants that the implementation maintains at all times. These invariants form the foundation of our reasoning about correctness. We structure operations to preserve these invariants rather than relying on post-hoc verification. The implementation becomes trustworthy by construction.",
-        ),
-    ],
-    &[
-        Slot::Str("The practical implementation of "),
-        Slot::Topic,
-        Slot::Str(
-            " balances theoretical purity with pragmatic constraints. We respect fundamental principles while remaining sensitive to real-world considerations. This balanced approach yields solutions that are both mathematically sound and practically deployable. The code reflects thoughtful engineering judgment rather than dogmatic adherence to absolutes.",
-        ),
-    ],
-    &[
-        Slot::Str("Effectively implementing "),
-        Slot::Topic,
-        Slot::Str(
-            " requires naming and structuring components to reflect their true purpose. Clear naming makes implicit assumptions explicit and aids understanding. We invest in terminology that accurately captures the semantic role of each piece. This linguistic precision prevents confusion and makes the code self-documenting.",
-        ),
-    ],
-    &[
-        Slot::Str("The architecture for "),
-        Slot::Topic,
-        Slot::Str(
-            " emerges from recognizing which operations are fundamental and which are derivable from them. We identify the minimal set of core operations. Everything else builds composably from these foundations. This parsimonious approach yields elegant and maintainable code.",
-        ),
-    ],
-    &[
-        Slot::Str("Crafting an implementation of "),
-        Slot::Topic,
-        Slot::Str(
-            " that proves robust means anticipating failure modes and addressing them preventatively. We identify what can go wrong and design the system to prevent those failures. Error handling is not an afterthought but integral to the design. The result is code that fails gracefully when problems arise.",
+            ", the central decision is to make data movement explicit at each interface boundary. \
+            Inputs are normalized once, transformed through deliberate stages, and emitted under a consistent output contract. \
+            This data-centric framing simplifies both auditing and verification.",
         ),
     ],
     &[
         Slot::Str("The implementation strategy for "),
         Slot::Topic,
         Slot::Str(
-            " prioritizes making illegal states unrepresentable rather than detecting them after the fact. We use the type system and structure to rule out erroneous combinations. Prevention is more effective than detection. The code prevents entire categories of bugs through thoughtful design.",
+            " emphasizes composable modules rather than a single large procedure. \
+            Units with explicit interfaces support fine-grained testing and controlled reuse where abstraction boundaries align.",
+        ),
+    ],
+    &[
+        Slot::Str("In this formulation of "),
+        Slot::Topic,
+        Slot::Str(
+            ", we prioritize semantic clarity before optimization. \
+            Once behavioral correctness is straightforward to reason about, targeted performance adjustments can be introduced with lower risk and clearer justification.",
+        ),
+    ],
+    &[
+        Slot::Str("State management in "),
+        Slot::Topic,
+        Slot::Str(
+            " is made explicit through well-defined transitions and containment of side effects at subsystem boundaries. \
+            This approach reduces hidden coupling and facilitates diagnosis when behavior deviates from expectation.",
+        ),
+    ],
+    &[
+        Slot::Str("To keep "),
+        Slot::Topic,
+        Slot::Str(
+            " tractable, low-level mechanical details are encapsulated behind narrowly scoped abstractions with explicit naming. \
+            Call sites therefore express intent-level operations, while bookkeeping remains localized to lower layers.",
+        ),
+    ],
+    &[
+        Slot::Str("In our implementation of "),
+        Slot::Topic,
+        Slot::Str(
+            ", component boundaries serve as the primary enforcement points for safety assumptions. \
+            Each handoff validates local preconditions before passing control onward, which limits error propagation and simplifies fault attribution.",
+        ),
+    ],
+    &[
+        Slot::Str("Because requirements for "),
+        Slot::Topic,
+        Slot::Str(
+            " often evolve, extensibility points are made explicit in the current design. \
+            Variable behavior is isolated behind stable interfaces, enabling incremental expansion without destabilizing established pathways.",
+        ),
+    ],
+    &[
+        Slot::Str("A central objective in "),
+        Slot::Topic,
+        Slot::Str(
+            " is to align operation placement with semantic role in the execution flow. \
+            When structure communicates meaning directly, misuse decreases and formal review becomes more reliable.",
+        ),
+    ],
+    &[
+        Slot::Str("In "),
+        Slot::Topic,
+        Slot::Str(
+            ", information flow dominates local algorithmic detail as the principal determinant of correctness. \
+            The implementation therefore emphasizes traceability from input normalization through intermediate transformation to output generation.",
+        ),
+    ],
+    &[
+        Slot::Str("A key design insight for "),
+        Slot::Topic,
+        Slot::Str(
+            " is the separation of decisions resolvable statically from those requiring runtime context. \
+            The implementation below preserves this distinction, reducing overhead on primary paths while containing dynamic logic.",
+        ),
+    ],
+    &[
+        Slot::Str("In practical deployments, "),
+        Slot::Topic,
+        Slot::Str(
+            " performs best when nominal cases remain efficient and edge conditions remain explicit. \
+            The following implementation preserves this balance by keeping common paths concise while handling boundary behavior through deliberate, structured branches.",
+        ),
+    ],
+    &[
+        Slot::Str("Our implementation of "),
+        Slot::Topic,
+        Slot::Str(
+            " is organized around a concise set of invariants preserved by every execution path. \
+            Maintaining these invariants as first-class design constraints simplifies correctness arguments and improves regression detection.",
+        ),
+    ],
+    &[
+        Slot::Str("In this realization of "),
+        Slot::Topic,
+        Slot::Str(
+            ", we favor maintainable structure over maximal theoretical compactness. \
+            The resulting code aligns with practical engineering constraints while preserving the guarantees required by the underlying model.",
+        ),
+    ],
+    &[
+        Slot::Str("A substantial portion of reliability in "),
+        Slot::Topic,
+        Slot::Str(
+            " derives from representational clarity rather than logic alone. \
+            The implementation uses semantically precise naming and narrowly scoped helper roles, allowing intent to be inferred directly from structure.",
+        ),
+    ],
+    &[
+        Slot::Str("The architecture for "),
+        Slot::Topic,
+        Slot::Str(
+            " is grounded in a minimal set of primitive operations from which higher-order behavior is composed. \
+            This strategy keeps the foundational layer small and verifiable while preserving expressive capability at higher layers.",
+        ),
+    ],
+    &[
+        Slot::Str("In designing "),
+        Slot::Topic,
+        Slot::Str(
+            ", failure modes are modeled as first-class behaviors rather than exceptional afterthoughts. \
+            Instead of ad hoc checks, the implementation applies a consistent error discipline that preserves graceful degradation and diagnostic clarity.",
+        ),
+    ],
+    &[
+        Slot::Str("The strategy for "),
+        Slot::Topic,
+        Slot::Str(
+            " is to preclude invalid states at the earliest representational boundary and make valid transitions straightforward to express. \
+            This reduces defensive branching in the computational core and eliminates broad classes of avoidable defects.",
         ),
     ],
     &[
         Slot::Str("Implementing "),
         Slot::Topic,
         Slot::Str(
-            " successfully requires understanding the constraints and degrees of freedom in the problem space. We identify what must be true and what can vary. This understanding guides structural decisions throughout. The implementation naturally accommodates legitimate variation while preventing illegitimate choices.",
+            " effectively requires explicit separation between hard constraints and legitimate degrees of freedom. \
+            The code encodes this distinction directly, supporting lawful variation while ruling out invalid combinations by construction.",
+        ),
+    ],
+    &[
+        Slot::Str("In formalizing "),
+        Slot::Topic,
+        Slot::Str(
+            ", we prioritize explicit invariants over implicit convention. \
+            The implementation therefore places validation and transition logic at points where correctness obligations are easiest to inspect. \
+            This structure supports both proof-oriented reasoning and practical maintenance.",
+        ),
+    ],
+    &[
+        Slot::Str("The implementation presented for "),
+        Slot::Topic,
+        Slot::Str(
+            " adopts a layered construction in which representation, transformation, and orchestration are separated by clear interfaces. \
+            Such separation reduces semantic drift between components and improves the reproducibility of behavior under perturbation. \
+            The code excerpt below is organized to reflect that analytical boundary.",
+        ),
+    ],
+    &[
+        Slot::Str("For "),
+        Slot::Topic,
+        Slot::Str(
+            ", the principal architectural choice is to encode constraints close to data entry points and preserve normalized structure thereafter. \
+            This reduces downstream branching and limits the propagation of malformed state through the pipeline. \
+            The resulting control structure remains compact while retaining strong safety properties.",
+        ),
+    ],
+    &[
+        Slot::Str("A defining feature of our "),
+        Slot::Topic,
+        Slot::Str(
+            " implementation is the explicit coupling of abstraction boundaries to verification boundaries. \
+            Each module is evaluated against local obligations before composition at higher levels of the stack. \
+            This design yields predictable behavior while preserving extensibility for future variants.",
         ),
     ],
 ];

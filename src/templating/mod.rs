@@ -16,6 +16,7 @@ pub use template_trait::Templater;
 pub use tone::TemplateTone;
 
 #[macro_export]
+/// Construct a `TemplateIter` from the inner contents.
 /// `TemplateIter` and `TemplatePart` must be imported and in scope.
 macro_rules! template_iter {
     ($($part:expr),* $(,)?) => {
