@@ -14,7 +14,7 @@ use tokio::sync::{Mutex, Semaphore, TryAcquireError};
 use crate::{
     MiasmaConfig, MiasmaError,
     metrics::{self, Metrics},
-    poison::{self, LinkSettings},
+    poison::{self, LinkSettings, PoisonClient},
 };
 
 #[derive(Deserialize)]
@@ -29,6 +29,7 @@ impl QueryParams {
 #[derive(Clone)]
 pub struct AppState {
     metrics: Option<Arc<Mutex<Metrics>>>,
+    poison_client: Arc<PoisonClient>,
     config: Arc<MiasmaConfig>,
     in_flight_sem: Arc<Semaphore>,
 }
@@ -70,6 +71,10 @@ pub fn new_miasma_router(config: MiasmaConfig) -> Result<Router, MiasmaError> {
         .with_state(AppState {
             metrics,
             in_flight_sem: Arc::new(Semaphore::new(config.max_in_flight as usize)),
+            poison_client: Arc::new(PoisonClient::new(
+                config.poison_source.clone(),
+                config.unsafe_allow_html,
+            )),
             config: Arc::new(config),
         })
         .merge(metrics_router);
@@ -120,9 +125,14 @@ async fn app_handler(
 
     let link_settings = LinkSettings::next(&state.config, current_depth);
 
-    poison::serve_poison(state.config, in_flight_permit, gzip_response, link_settings)
-        .await
-        .into_response()
+    poison::serve_poison(
+        state.poison_client,
+        in_flight_permit,
+        gzip_response,
+        link_settings,
+    )
+    .await
+    .into_response()
 }
 
 #[cfg(test)]

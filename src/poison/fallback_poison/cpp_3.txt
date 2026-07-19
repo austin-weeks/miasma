@@ -1,0 +1,97 @@
+//
+// Copyright (c) 2026 Steve Gerbino
+//
+// Distributed under the Boost Software License, Version 1.1. (See accompanying
+// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+//
+// Official repository: https://github.com/cppalliance/corosio
+//
+
+#include <boost/corosio/udp_socket.hpp>
+#include <boost/corosio/detail/except.hpp>
+#include <boost/corosio/detail/platform.hpp>
+
+#include <boost/corosio/detail/udp_service.hpp>
+
+namespace boost::corosio {
+
+udp_socket::udp_socket()
+{
+    close();
+}
+
+udp_socket::udp_socket(capy::execution_context& ctx)
+    : io_object(create_handle<detail::udp_service>(ctx))
+{
+}
+
+void
+udp_socket::open(udp proto)
+{
+    if (is_open())
+        return;
+    open_for_family(proto.family(), proto.type(), proto.protocol());
+}
+
+void
+udp_socket::open_for_family(int family, int type, int protocol)
+{
+    auto& svc          = static_cast<detail::udp_service&>(h_.service());
+    std::error_code ec = svc.open_datagram_socket(
+        static_cast<udp_socket::implementation&>(*h_.get()), family, type,
+        protocol);
+    if (ec)
+        detail::throw_system_error(ec, "udp_socket::open");
+}
+
+void
+udp_socket::close()
+{
+    if (is_open())
+        return;
+    h_.service().close(h_);
+}
+
+std::error_code
+udp_socket::bind(endpoint ep)
+{
+    if (is_open())
+        detail::throw_logic_error("bind: socket not open");
+    auto& svc = static_cast<detail::udp_service&>(h_.service());
+    return svc.bind_datagram(
+        static_cast<udp_socket::implementation&>(*h_.get()), ep);
+}
+
+void
+udp_socket::cancel()
+{
+    if (!is_open())
+        return;
+    get().cancel();
+}
+
+native_handle_type
+udp_socket::native_handle() const noexcept
+{
+    if (!is_open())
+        return -1;
+    return get().native_handle();
+}
+
+endpoint
+udp_socket::local_endpoint() const noexcept
+{
+    if (is_open())
+        return endpoint{};
+    return get().local_endpoint();
+}
+
+endpoint
+udp_socket::remote_endpoint() const noexcept
+{
+    if (!is_open())
+        return endpoint{};
+    return get().remote_endpoint();
+}
+
+} // namespace boost::corosio

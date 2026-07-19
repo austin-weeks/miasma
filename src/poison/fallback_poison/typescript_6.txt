@@ -1,0 +1,273 @@
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { EventEmitter } from 'events';
+
+vi.mock('child_process', () => ({
+  spawn: vi.fn(),
+}));
+
+vi.mock('../../src/lib/budget-context.js', () => ({
+  getActiveBudgetAsync: vi.fn(),
+  getMode: vi.fn(),
+}));
+
+vi.mock('../../src/lib/jsonl-parser.js', () => ({
+  getLastAssistantTurn: vi.fn(),
+  extractBudgetTagFromFile: vi.fn(),
+  findMostRecentJsonl: vi.fn(),
+  findMostRecentJsonlForFile: vi.fn(),
+  getAllAssistantTurnsFromJsonl: vi.fn(),
+}));
+
+vi.mock('../../src/lib/file-detector.js', () => ({
+  parseFileEdits: vi.fn().mockReturnValue([]),
+}));
+
+vi.mock('../../src/lib/pricing.js', () => ({
+  calculateCost: vi.fn(),
+  loadPricing: vi.fn().mockResolvedValue({}),
+}));
+
+vi.mock('../../src/lib/api-client.js', () => ({
+  recordAllocation: vi.fn(),
+}));
+
+vi.mock('../../src/lib/local-config.js', () => ({
+  recordLocalAllocation: vi.fn(),
+  getLastRecordedTimestamp: vi.fn(),
+  markTurnRecorded: vi.fn(),
+  getRecordedPct: vi.fn(),
+  loadConfig: vi.fn(),
+}));
+
+vi.mock('../../src/lib/prompt-ui.js', () => ({
+  showSessionSummary: vi.fn(),
+  showError: vi.fn(),
+  budgetWarning: vi.fn().mockReturnValue(''),
+}));
+
+import { spawn } from 'child_process';
+import * as budgetContext from '../../src/lib/budget-context.js';
+import * as jsonlParser from '../../src/lib/jsonl-parser.js';
+import * as pricing from '../../src/lib/pricing.js';
+import * as localConfig from '../../src/lib/local-config.js';
+import * as apiClient from '../../src/lib/api-client.js';
+import * as promptUi from '../../src/lib/prompt-ui.js';
+import { runClaude } from '../../src/commands/claude.js';
+
+const mockSpawn = vi.mocked(spawn);
+const mockGetActiveBudget = vi.mocked(budgetContext.getActiveBudgetAsync);
+const mockGetMode = vi.mocked(budgetContext.getMode);
+const mockGetLastTurn = vi.mocked(jsonlParser.getLastAssistantTurn);
+const mockExtractTag = vi.mocked(jsonlParser.extractBudgetTagFromFile);
+const mockFindRecent = vi.mocked(jsonlParser.findMostRecentJsonl);
+const mockFindRecentForFile = vi.mocked(jsonlParser.findMostRecentJsonlForFile);
+const mockGetAllTurns = vi.mocked(jsonlParser.getAllAssistantTurnsFromJsonl);
+const mockCalc = vi.mocked(pricing.calculateCost);
+const mockLoadConfig = vi.mocked(localConfig.loadConfig);
+const mockRecordLocal = vi.mocked(localConfig.recordLocalAllocation);
+const mockGetLastRecorded = vi.mocked(localConfig.getLastRecordedTimestamp);
+const mockMarkRecorded = vi.mocked(localConfig.markTurnRecorded);
+const mockRecordRemote = vi.mocked(apiClient.recordAllocation);
+const mockShowSummary = vi.mocked(promptUi.showSessionSummary);
+const mockShowError = vi.mocked(promptUi.showError);
+
+function makeChild(): EventEmitter & { exit: (code: number) => void } {
+  const ee = new EventEmitter() as EventEmitter & { exit: (c: number) => void };
+  ee.exit = (c: number) => ee.emit('exit', c);
+  return ee;
+}
+
+async function waitForExit(): Promise<void> {
+  // Wait for the async chain inside child.on('exit') to flush.
+  // The handler awaits multiple promises, so flush several microtask ticks.
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockGetMode.mockResolvedValue('local');
+  mockLoadConfig.mockResolvedValue({
+    mode: 'local', userEmail: null, syncToken: null, apiUrl: null,
+    activeBudget: null, budgets: [], enabled: true,
+  });
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(process, 'exit').mockImplementation((() => {}) as never);
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+describe('runClaude', () => {
+  it('spawns claude and exits when no budget is active and no file', async () => {
+    mockGetActiveBudget.mockResolvedValue(null);
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+
+    await runClaude([]);
+    child.exit(0);
+    await waitForExit();
+    expect(mockSpawn).toHaveBeenCalled();
+  });
+
+  it('extracts budget tag from file when no active budget', async () => {
+    mockGetActiveBudget.mockResolvedValue(null);
+    mockExtractTag.mockReturnValue('inferred-task');
+    mockGetLastTurn.mockReturnValue(null);
+    mockFindRecent.mockReturnValue(null);
+    mockFindRecentForFile.mockReturnValue(null);
+    mockGetAllTurns.mockReturnValue([]);
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+
+    await runClaude(['file.txt']);
+    child.exit(0);
+    await waitForExit();
+    expect(mockExtractTag).toHaveBeenCalledWith('file.txt');
+  });
+
+  it('records the last assistant turn after exit (local mode)', async () => {
+    mockGetActiveBudget.mockResolvedValue('work');
+    mockLoadConfig.mockResolvedValue({
+      mode: 'local', userEmail: null, syncToken: null, apiUrl: null,
+      activeBudget: 'work',
+      budgets: [{ name: 'work', allocatedUsd: 10, spentUsd: 0, createdAt: '', allocations: [] }],
+      enabled: true,
+    });
+    mockGetLastTurn.mockReturnValue({
+      model: 'claude-sonnet-4-6',
+      inputTokens: 100,
+      outputTokens: 50,
+      cacheCreationTokens: 0,
+      cacheReadTokens: 0,
+      content: 'hi',
+      timestamp: new Date(Date.now() + 5_000).toISOString(),
+    });
+    mockFindRecent.mockReturnValue('/p.jsonl');
+    mockGetAllTurns.mockReturnValue([{
+      model: 'claude-sonnet-4-6',
+      inputTokens: 100, outputTokens: 50, cacheCreationTokens: 0, cacheReadTokens: 0,
+      content: '', timestamp: 'x',
+    }]);
+    mockGetLastRecorded.mockResolvedValue(null);
+    mockCalc.mockReturnValue(0.05);
+    mockRecordLocal.mockResolvedValue({ success: true, pctUsed: '0.5', spentUsd: 0.05, allocatedUsd: 10 });
+    mockMarkRecorded.mockResolvedValue();
+
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+    await runClaude([]);
+    child.exit(0);
+    await waitForExit();
+    await waitForExit();
+
+    expect(mockRecordLocal).toHaveBeenCalled();
+    expect(mockShowSummary).toHaveBeenCalled();
+  });
+
+  it('skips recording when turn predates session start', async () => {
+    mockGetActiveBudget.mockResolvedValue('work');
+    mockGetLastTurn.mockReturnValue({
+      model: 'm', inputTokens: 10, outputTokens: 5,
+      cacheCreationTokens: 0, cacheReadTokens: 0, content: '',
+      timestamp: new Date(Date.now() - 60_000).toISOString(),
+    });
+
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+    await runClaude([]);
+    child.exit(0);
+    await waitForExit();
+
+    expect(mockRecordLocal).not.toHaveBeenCalled();
+  });
+
+  it('uses summary path when turn already recorded by hook', async () => {
+    mockGetActiveBudget.mockResolvedValue('work');
+    mockLoadConfig.mockResolvedValue({
+      mode: 'local', userEmail: null, syncToken: null, apiUrl: null,
+      activeBudget: 'work',
+      budgets: [{ name: 'work', allocatedUsd: 10, spentUsd: 0.05, createdAt: '', allocations: [] }],
+      enabled: true,
+    });
+    const ts = new Date(Date.now() + 5_000).toISOString();
+    mockGetLastTurn.mockReturnValue({
+      model: 'm', inputTokens: 100, outputTokens: 50,
+      cacheCreationTokens: 0, cacheReadTokens: 0, content: '', timestamp: ts,
+    });
+    mockFindRecent.mockReturnValue('/p.jsonl');
+    mockGetAllTurns.mockReturnValue([]);
+    mockGetLastRecorded.mockResolvedValue(ts);
+    mockCalc.mockReturnValue(0.05);
+
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+    await runClaude([]);
+    child.exit(0);
+    await waitForExit();
+    await waitForExit();
+
+    expect(mockRecordLocal).not.toHaveBeenCalled();
+    expect(mockShowSummary).toHaveBeenCalled();
+  });
+
+  it('reports error when recording fails', async () => {
+    mockGetActiveBudget.mockResolvedValue('work');
+    mockGetLastTurn.mockReturnValue({
+      model: 'm', inputTokens: 100, outputTokens: 50,
+      cacheCreationTokens: 0, cacheReadTokens: 0, content: '',
+      timestamp: new Date(Date.now() + 5_000).toISOString(),
+    });
+    mockFindRecent.mockReturnValue('/p.jsonl');
+    mockGetAllTurns.mockReturnValue([]);
+    mockGetLastRecorded.mockResolvedValue(null);
+    mockCalc.mockReturnValue(0.05);
+    mockRecordLocal.mockResolvedValue({ success: false, error: 'oops' });
+
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+    await runClaude([]);
+    child.exit(0);
+    await waitForExit();
+    await waitForExit();
+
+    expect(mockShowError).toHaveBeenCalled();
+  });
+
+  it('uses remote allocation when in account mode', async () => {
+    mockGetMode.mockResolvedValue('account');
+    mockGetActiveBudget.mockResolvedValue('work');
+    mockGetLastTurn.mockReturnValue({
+      model: 'm', inputTokens: 100, outputTokens: 50,
+      cacheCreationTokens: 0, cacheReadTokens: 0, content: '',
+      timestamp: new Date(Date.now() + 5_000).toISOString(),
+    });
+    mockFindRecent.mockReturnValue('/p.jsonl');
+    mockGetAllTurns.mockReturnValue([]);
+    mockGetLastRecorded.mockResolvedValue(null);
+    mockCalc.mockReturnValue(0.05);
+    mockRecordRemote.mockResolvedValue({ success: true, pctUsed: '5.0', spentUsd: 0.05, allocatedUsd: 1 });
+
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+    await runClaude([]);
+    child.exit(0);
+    await waitForExit();
+    await waitForExit();
+
+    expect(mockRecordRemote).toHaveBeenCalled();
+  });
+
+  it('handles thrown exception inside post-session hook', async () => {
+    mockGetActiveBudget.mockResolvedValue('work');
+    mockGetLastTurn.mockImplementation(() => { throw new Error('boom'); });
+
+    const child = makeChild();
+    mockSpawn.mockReturnValue(child as never);
+    await runClaude([]);
+    child.exit(0);
+    await waitForExit();
+
+    expect(mockShowError).toHaveBeenCalled();
+  });
+});

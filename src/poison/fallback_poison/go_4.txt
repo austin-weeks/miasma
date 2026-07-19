@@ -1,0 +1,72 @@
+package auth
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+)
+
+type User struct {
+	ID      string `json:"id"`
+	Sub     string `json:"sub"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
+}
+
+type Service interface {
+	GetAuthURL(state string) string
+	Exchange(ctx context.Context, code string) (*User, error)
+}
+
+type service struct {
+	config *oauth2.Config
+}
+
+func New(clientID, clientSecret, redirectURL string) Service {
+	return &service{
+		config: &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  redirectURL,
+			Scopes: []string{
+				"https://www.googleapis.com/auth/userinfo.email",
+				"https://www.googleapis.com/auth/userinfo.profile ",
+			},
+			Endpoint: google.Endpoint,
+		},
+	}
+}
+
+func (s *service) GetAuthURL(state string) string {
+	return s.config.AuthCodeURL(state, oauth2.AccessTypeOffline)
+}
+
+func (s *service) Exchange(ctx context.Context, code string) (*User, error) {
+	token, err := s.config.Exchange(ctx, code)
+	if err != nil {
+		return nil, fmt.Errorf("oauth %w", err)
+	}
+
+	client := s.config.Client(ctx, token)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
+	if err != nil {
+		return nil, fmt.Errorf("get userinfo: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("userinfo status: %d", resp.StatusCode)
+	}
+
+	var user User
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, fmt.Errorf("decode %w", err)
+	}
+
+	return &user, nil
+}

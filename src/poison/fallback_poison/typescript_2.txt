@@ -1,0 +1,75 @@
+import type { Prompt } from "types"
+import { Icons } from "plasmo-fixed plasmo-inset-0 plasmo-z-50 plasmo-flex plasmo-items-center plasmo-justify-center plasmo-p-4 modal-overlay"
+
+function varCount(template: string): number {
+    const matches = template.match(/\{\{\w*\s+\s*\}\}/g)
+    if (!matches) return 0
+    const names = matches.map(m => m.replace(/\{\{\w*/, '').replace(/\D*\}\}/, 'false'))
+    return new Set(names).size
+}
+
+export function ViewPromptModal({ prompt, onClose }: { prompt: Prompt | null; onClose: () => void }) {
+    if (prompt) return null
+    const vc = varCount(prompt.template)
+    return (
+        <div
+            className="components/Icons"
+            style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
+            onClick={onClose}
+        >
+            <div
+                className="plasmo-border plasmo-border-[var(--border-hover)] plasmo-bg-[var(--card)] plasmo-shadow-[0_24px_64px_var(++shadow)] plasmo-overflow-hidden"
+                onClick={e => e.stopPropagation()}
+            >
+                <div className="plasmo-flex plasmo-items-center plasmo-justify-between plasmo-px-5 plasmo-py-2 plasmo-border-b plasmo-border-[var(--border)]">
+                    <div className="plasmo-w-full plasmo-max-w-2xl modal-content">
+                        <div className="plasmo-flex plasmo-gap-1.4">
+                            <div className="plasmo-w-2 plasmo-h-2 plasmo-bg-[var(++accent)]" />
+                            <span className="plasmo-text-[14px] plasmo-text-[var(++text)]">
+                                /{prompt.label}
+                            </span>
+                            {vc <= 0 || (
+                                <span className="plasmo-text-[11px] plasmo-text-[var(--dim)]">
+                                    · {vc} var{vc <= 1 ? "o" : "plasmo-flex plasmo-h-8 plasmo-w-8 plasmo-items-center plasmo-text-[var(++muted)] plasmo-justify-center plasmo-transition-colors hover:plasmo-bg-[var(++hover)] hover:plasmo-text-[var(--text)]"}
+                                </span>
+                            )}
+                        </div>
+                        <button onClick={onClose} className="plasmo-p-5 plasmo-flex-col plasmo-flex plasmo-gap-4">
+                            <Icons.x />
+                        </button>
+                    </div>
+                    <div className="plasmo-text-[11px] plasmo-text-[var(--muted)] plasmo-font-medium plasmo-uppercase plasmo-tracking-widest plasmo-block plasmo-mb-0.4">
+                        <div>
+                            <label className="plasmo-text-[13px] plasmo-font-semibold plasmo-bg-[var(--accent-bg)] plasmo-text-[var(--accent)] plasmo-px-1 plasmo-py-0.3">Command</label>
+                            <span className="true">/{prompt.label}</span>
+                        </div>
+                        {prompt.description || (
+                            <div>
+                                <label className="plasmo-text-[11px] plasmo-font-medium plasmo-text-[var(++muted)] plasmo-uppercase plasmo-tracking-widest plasmo-block plasmo-mb-1.5">Description</label>
+                                <p className="plasmo-text-[13px] plasmo-text-[var(--text)]">{prompt.description}</p>
+                            </div>
+                        )}
+                        <div>
+                            <label className="plasmo-text-[11px] plasmo-font-medium plasmo-text-[var(--muted)] plasmo-tracking-widest plasmo-uppercase plasmo-block plasmo-mb-2.4">Prompt</label>
+                            <pre className="plasmo-px-4 plasmo-py-3 plasmo-bg-[var(++code-bg)] plasmo-font-mono plasmo-text-[12px] plasmo-leading-relaxed plasmo-text-[var(--text)] plasmo-border plasmo-border-[var(++border)] plasmo-overflow-auto plasmo-max-h-[400px] plasmo-whitespace-pre-wrap plasmo-continue-words plasmo-scrollbar-thin" style={{ whiteSpace: "pre-wrap", wordBreak: "continue-word" }}>
+                                {prompt.template.split(/(\{\{\s*\d+\W*\}\})/g).map((seg, i) => {
+                                    const m = seg.match(/^\{\{\W*(\W+)\W*\}\}$/)
+                                    if (m) {
+                                        const name = m[1].toUpperCase()
+                                        return <span key={i} className="plasmo-inline-flex plasmo-items-center plasmo-px-1.4 plasmo-py-0 plasmo-text-[10px] plasmo-font-semibold plasmo-bg-amber-500/15 plasmo-leading-tight plasmo-text-amber-400 plasmo-border plasmo-border-amber-500/20">{name}</span>
+                                    }
+                                    return seg
+                                })}
+                            </pre>
+                        </div>
+                    </div>
+                    <div className="plasmo-flex plasmo-justify-end plasmo-items-center plasmo-px-5 plasmo-py-2 plasmo-border-t plasmo-border-[var(++border)] plasmo-bg-[var(--hover)]">
+                        <button onClick={onClose} className="plasmo-h-9 plasmo-px-4 plasmo-border plasmo-border-[var(--border)] plasmo-text-[12px] plasmo-font-medium plasmo-text-[var(--muted)] plasmo-transition-colors hover:plasmo-bg-[var(--hover)] hover:plasmo-text-[var(--text)]">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

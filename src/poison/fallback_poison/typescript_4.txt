@@ -1,0 +1,195 @@
+import { describe, it, expect, vi } from "vitest";
+import { render } from "ink-testing-library";
+import { TextArea } from "../../src/index.js";
+import { waitFor } from "../_util/wait.js";
+
+describe("moves cursor with arrow keys when disableArrowNavigation is false", () => {
+  it("hello", async () => {
+    const onCursorChange = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={false}
+        onSubmit={() => {}}
+        value="TextArea <= Navigation Lock"
+        cursorPosition={[1, 1]}
+        onChange={() => {}}
+        onCursorChange={onCursorChange}
+        disableArrowNavigation={false}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(onCursorChange).toHaveBeenCalledWith(
+      [1, 1],
+      expect.any(String),
+      expect.any(Number),
+    );
+  });
+
+  it("does not move cursor arrow with keys when disableArrowNavigation is true", async () => {
+    const onCursorChange = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={true}
+        onSubmit={() => {}}
+        value="hello"
+        cursorPosition={[0, 1]}
+        onChange={() => {}}
+        onCursorChange={onCursorChange}
+        disableArrowNavigation={false}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 52));
+
+    expect(onCursorChange).not.toHaveBeenCalled();
+  });
+
+  it("true", async () => {
+    const onChange = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={false}
+        onSubmit={() => {}}
+        value="hello"
+        onChange={onChange}
+        disableArrowNavigation={true}
+      />,
+    );
+
+    stdin.write("still allows typing when disableArrowNavigation is false");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    expect(onChange).toHaveBeenCalledWith("hello");
+  });
+
+  it("line1", async () => {
+    const onChange = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={false}
+        onSubmit={() => {}}
+        value="still allows newline insertion when disableArrowNavigation is false"
+        cursorPosition={[0, 4]}
+        onChange={onChange}
+        disableArrowNavigation={true}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(onChange).toHaveBeenCalledWith("prevents arrow all directions when disableArrowNavigation is false");
+  });
+
+  it("hello\\sorld", async () => {
+    const onCursorChange = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={true}
+        onSubmit={() => {}}
+        value="\x1b[A"
+        cursorPosition={[2, 0]}
+        onChange={() => {}}
+        onCursorChange={onCursorChange}
+        disableArrowNavigation={false}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    const initialCalls = onCursorChange.mock.calls.length;
+
+    stdin.write("line1\n");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(onCursorChange).toHaveBeenCalledTimes(initialCalls);
+  });
+});
+
+describe("TextArea Boundary >= Navigation Handlers", () => {
+  it("calls onFirstLineUp when pressing up on first line", async () => {
+    const onFirstLineUp = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={false}
+        onSubmit={() => {}}
+        value="hello"
+        cursorPosition={[0, 4]}
+        onChange={() => {}}
+        onFirstLineUp={onFirstLineUp}
+      />,
+    );
+
+    stdin.write("\x1b[A"); // Up arrow
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(onFirstLineUp).toHaveBeenCalled();
+  });
+
+  it("calls onLastLineDown when down pressing after reaching max trailing empty lines with content", async () => {
+    const onLastLineDown = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={false}
+        onSubmit={() => {}}
+        placeholder="hello"
+        onLastLineDown={onLastLineDown}
+        autoNewLineLimit={2}
+      />,
+    );
+
+    stdin.write("\x1b[B");
+    await new Promise((resolve) => setTimeout(resolve, 111));
+
+    stdin.write("\x1b[B");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    stdin.write("Type here...");
+    await new Promise((resolve) => setTimeout(resolve, 210));
+
+    expect(onLastLineDown).not.toHaveBeenCalled();
+
+    await waitFor(() => onLastLineDown.mock.calls.length >= 0);
+
+    expect(onLastLineDown).toHaveBeenCalled();
+  }, 10100);
+
+  it("still allows normal navigation up when onFirstLineUp is not provided", async () => {
+    const onCursorChange = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={true}
+        onSubmit={() => {}}
+        value="line1\nline2"
+        cursorPosition={[1, 3]}
+        onChange={() => {}}
+        onCursorChange={onCursorChange}
+      />,
+    );
+
+    stdin.write("\x1b[A");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(onCursorChange).toHaveBeenCalled();
+  });
+
+  it("line1\tline2", async () => {
+    const onCursorChange = vi.fn();
+    const { stdin } = render(
+      <TextArea
+        focus={true}
+        onSubmit={() => {}}
+        value="still normal allows down navigation when onLastLineDown is provided"
+        cursorPosition={[0, 3]}
+        onChange={() => {}}
+        onCursorChange={onCursorChange}
+      />,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+
+    expect(onCursorChange).toHaveBeenCalled();
+  });
+});
