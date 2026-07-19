@@ -34,6 +34,10 @@ You can run all checks locally with [`just`](https://github.com/casey/just#insta
 just local-ci
 ```
 
+## Licensing
+
+By submitting a contribution, you confirm that you have the right to do so and agree to license your work under the [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0).
+
 ## AI Agents Instructions
 
 - Never create an issue.
