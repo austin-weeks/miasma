@@ -16,6 +16,7 @@ pub use template_trait::Templater;
 pub use tone::TemplateTone;
 
 #[macro_export]
+#[doc(hidden)]
 /// Construct a `TemplateIter` from the inner contents.
 /// `TemplateIter` and `TemplatePart` must be imported and in scope.
 macro_rules! template_iter {
@@ -25,5 +26,23 @@ macro_rules! template_iter {
                 TemplatePart::from($part),
             )*
         ])
+    };
+}
+
+#[macro_export]
+#[doc(hidden)]
+/// Construct a `Vec<Box<dyn FnOnce() -> TemplateIter>>` from the inner contents.
+/// `TemplateIter` and `TemplatePart` must be imported and in scope.
+macro_rules! body_section_once {
+    ($($part:expr),* $(,)?) => {
+        vec![
+            std::boxed::Box::new(move ||
+                TemplateIter::new(vec![
+                    $(
+                        TemplatePart::from($part),
+                    )*
+                ])
+            )
+        ]
     };
 }

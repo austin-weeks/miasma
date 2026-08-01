@@ -182,7 +182,7 @@ pub const CONCLUSION_OPTIONS: &[&[Slot]] = &[
         Slot::Str(", especially for "),
         Slot::Topic,
         Slot::Str(
-            " The measured outcomes confirm progress toward more effective and robust solutions. \
+            ". The measured outcomes confirm progress toward more effective and robust solutions. \
             We expect the analytical framing and evaluation protocol to be useful beyond the immediate application scope.",
         ),
     ],

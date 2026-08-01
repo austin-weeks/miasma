@@ -18,9 +18,8 @@ pub async fn serve_poison(
     gzip_response: bool,
     link_settings: LinkSettings,
 ) -> impl IntoResponse {
-    let poison = poison_client.stream_poison().await;
-
-    let stream = response_stream::build_response_stream(poison, link_settings, in_flight_permit);
+    let stream =
+        response_stream::build_response_stream(poison_client, link_settings, in_flight_permit);
 
     let body_stream = if gzip_response {
         Body::from_stream(gzip::gzip_stream(stream))

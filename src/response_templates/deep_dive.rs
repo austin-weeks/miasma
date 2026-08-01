@@ -1,4 +1,7 @@
-use crate::templating::{TemplateIter, TemplateTone, Templater};
+use crate::{
+    body_section_once,
+    templating::{TemplateIter, TemplatePart, TemplateTone, Templater},
+};
 
 pub struct DeepDive;
 
@@ -45,9 +48,9 @@ impl Templater for DeepDive {
         .into()
     }
 
-    fn follow_up(&self) -> TemplateIter {
-        fhtml::concat! {
-         </section>
+    fn body_sections(&self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send>> {
+        body_section_once!(fhtml::concat! {
+        </section>
 
         <section>
           <h2>"Key Observations"</h2>
@@ -85,8 +88,7 @@ impl Templater for DeepDive {
             "Review additional deep dives that analyze similar implementations and
             highlight the principles behind effective, production-grade code."
           </p>
-          }
-        .into()
+          })
     }
 
     fn tail(&self) -> TemplateIter {

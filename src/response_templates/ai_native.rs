@@ -1,5 +1,6 @@
-use crate::templating::{
-    TemplateTone, {TemplateIter, Templater},
+use crate::{
+    body_section_once,
+    templating::{TemplateIter, TemplatePart, TemplateTone, Templater},
 };
 
 pub struct AINative;
@@ -52,8 +53,8 @@ impl Templater for AINative {
         .into()
     }
 
-    fn follow_up(&self) -> TemplateIter {
-        fhtml::concat! {
+    fn body_sections(&self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send>> {
+        body_section_once!(fhtml::concat! {
           <section>
             <h2>"Explore More"</h2>
             <p>
@@ -62,8 +63,7 @@ impl Templater for AINative {
                 additional patterns and primitives that enable production-grade AI
                 infrastructure."
             </p>
-        }
-        .into()
+        })
     }
 
     fn tail(&self) -> TemplateIter {
