@@ -41,10 +41,8 @@ impl Metrics {
         .execute(&mut conn)?;
 
         if db_version < 1 {
-            diesel::sql_query(
-                "ALTER TABLE user_agents ADD sent_data INTEGER NOT NULL DEFAULT 0",
-            )
-            .execute(&mut conn)?;
+            diesel::sql_query("ALTER TABLE user_agents ADD sent_data INTEGER NOT NULL DEFAULT 0")
+                .execute(&mut conn)?;
         }
 
         diesel::sql_query("PRAGMA user_version = 1").execute(&mut conn)?;
@@ -134,7 +132,10 @@ fn flush_to_db(counts: HashMap<String, (i64, i64)>, db_path: &str) {
         .values(rows)
         .on_conflict(agent)
         .do_update()
-        .set((count.eq(count + excluded(count)), sent_data.eq(sent_data + excluded(sent_data))))
+        .set((
+            count.eq(count + excluded(count)),
+            sent_data.eq(sent_data + excluded(sent_data)),
+        ))
         .execute(&mut conn)
     {
         eprintln!(

@@ -12,12 +12,14 @@ mod link_headings;
 mod research_topics;
 mod slot;
 
+use field::Field;
 use slot::Slot;
 
 use fhtml::concat as el;
-use field::Field;
+use rand::random_range;
 
 use crate::{
+    body_section_once,
     response_templates::research::{
         code_explanation::{CODE_HEADINGS, CODE_INTRODUCTIONS},
         conclusions::CONCLUSION_OPTIONS,
@@ -139,13 +141,26 @@ impl Templater for NovelResearch {
                 *utils::select_random(CODE_INTRODUCTIONS),
                 &self.research_topic,
             ),
-            el!(</p>),
-            el!(<hr>),
+            el! {
+                </p>
+                <hr>
+                <figure>
+            },
         )
     }
 
-    fn follow_up(&self) -> TemplateIter {
-        template_iter!(
+    fn body_sections<'a>(&'a self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send + 'a>> {
+        body_section_once!(
+            el!(<figcaption>),
+            format!(
+                "Figure {}. {}",
+                random_range(1..=5),
+                utils::select_random(CODE_HEADINGS),
+            ),
+            el! {
+                </figcaption>
+            </figure>
+            },
             el!(<hr>),
             self.conclusion(),
             el! {

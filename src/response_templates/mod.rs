@@ -26,7 +26,7 @@ pub const CASUAL_STYLES: &[&str] = &[
     include_str!("styles/simple.css"),
     include_str!("styles/code-blog.css"),
 ];
-pub const ACADEMIC_STYLES: &[&str] = &[include_str!("styles/professor.css")];
+pub const ACADEMIC_STYLES: &[&str] = &[include_str!("styles/geriatric-professor.css")];
 pub const ENTERPRISE_STYLES: &[&str] = &[
     include_str!("styles/vibe-slop.css"),
     include_str!("styles/elegant.css"),
@@ -34,15 +34,16 @@ pub const ENTERPRISE_STYLES: &[&str] = &[
 
 #[cfg(test)]
 mod test {
-    use crate::templating::TemplateBuilder;
+    use std::iter::once;
 
     use super::*;
+    use crate::templating::TemplateBuilder;
 
     #[test]
     fn all_templates_produce_valid_documents() {
         // Do multiple iterations per template.
         // Since there is random generation in the templating logic - this helps catch more bugs.
-        let test_iterations = 100;
+        let test_iterations = 250;
 
         for _ in 0..test_iterations {
             for (ind, (template_constructor, _)) in
@@ -50,8 +51,13 @@ mod test {
             {
                 let builder = TemplateBuilder::with_template(template_constructor());
                 let document = builder
-                    .start_to_poison()
-                    .chain(builder.poison_to_links())
+                    .start_to_body()
+                    .chain(
+                        builder
+                            .body_sections()
+                            .flat_map(|s| once(s.pre_poison().into()).chain(s.post_poison())),
+                    )
+                    .chain(once(builder.body_to_links().into()))
                     .chain(builder.links_to_end())
                     .collect::<String>();
 
@@ -61,6 +67,15 @@ mod test {
                     "template at index {ind}: {errors:?} - {document:?}"
                 );
             }
+        }
+    }
+
+    #[test]
+    // Ensures that all templates will produce a document with at least one poison block.
+    fn all_templates_contain_body_sections() {
+        for (template_constructor, _) in RESPONSE_TEMPLATE_CONSTRUCTORS {
+            let template = template_constructor();
+            assert!(!template.body_sections().is_empty());
         }
     }
 

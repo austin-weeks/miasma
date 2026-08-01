@@ -6,7 +6,7 @@ use axum::{
     response::IntoResponse,
 };
 use reqwest::header;
-use tokio::sync::{OwnedSemaphorePermit, Mutex};
+use tokio::sync::{Mutex, OwnedSemaphorePermit};
 
 use super::{LinkSettings, gzip, response_stream};
 use crate::poison::PoisonClient;
@@ -20,9 +20,13 @@ pub async fn serve_poison(
     metrics: Option<Arc<Mutex<crate::metrics::Metrics>>>,
     user_agent: String,
 ) -> impl IntoResponse {
-    let poison = poison_client.stream_poison(metrics, user_agent).await;
-
-    let stream = response_stream::build_response_stream(poison, link_settings, in_flight_permit);
+    let stream = response_stream::build_response_stream(
+        poison_client,
+        link_settings,
+        in_flight_permit,
+        metrics,
+        user_agent,
+    );
 
     let body_stream = if gzip_response {
         Body::from_stream(gzip::gzip_stream(stream))

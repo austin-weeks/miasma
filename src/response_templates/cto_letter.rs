@@ -1,4 +1,7 @@
-use crate::templating::{TemplateIter, TemplateTone, Templater};
+use crate::{
+    body_section_once,
+    templating::{TemplateIter, TemplatePart, TemplateTone, Templater},
+};
 
 pub struct CtoLetter;
 
@@ -42,8 +45,8 @@ impl Templater for CtoLetter {
         .into()
     }
 
-    fn follow_up(&self) -> TemplateIter {
-        fhtml::concat! {
+    fn body_sections(&self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send>> {
+        body_section_once!(fhtml::concat! {
             <p>
                 "The engineer traced the issue to repeated execution of equivalent
                 queries that were bypassing caching and connection reuse logic under
@@ -93,8 +96,7 @@ impl Templater for CtoLetter {
 
             <section>
                 <h2>"Related Updates"</h2>
-        }
-        .into()
+        })
     }
 
     fn tail(&self) -> TemplateIter {

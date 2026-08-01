@@ -12,6 +12,16 @@ use crate::templating::TemplatePart;
 /// let manually = TemplateIter::new(vec!["<span>Hello </span>".into(), "<span>world!</span>".into()]);
 /// let nested = TemplateIter::new(vec![TemplateIter::new(vec!["<p>Hello world!</p>".into()]).into()]);
 /// ```
+///
+/// ```
+/// use miasma::templating::{TemplateIter, TemplatePart};
+/// use miasma::template_iter;
+///
+/// let with_macro: TemplateIter = template_iter! {
+///     "<p>Hello world!</p>",
+///     "<div>Goodbye</div>"
+/// };
+/// ```
 #[derive(Default)]
 pub struct TemplateIter {
     current: usize,
@@ -28,25 +38,20 @@ impl Iterator for TemplateIter {
     type Item = Cow<'static, str>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        #[allow(clippy::question_mark)]
-        let next = match self.parts.get_mut(self.current) {
-            None => return None,
-            Some(p) => match p {
-                TemplatePart::String(s) => {
+        match self.parts.get_mut(self.current)? {
+            TemplatePart::String(s) => {
+                self.current += 1;
+                Some(mem::take(s))
+            }
+            #[allow(clippy::single_match_else)]
+            TemplatePart::Iter(i) => match i.next() {
+                Some(s) => Some(s),
+                None => {
                     self.current += 1;
-                    mem::take(s)
+                    self.next()
                 }
-                #[allow(clippy::single_match_else)]
-                TemplatePart::Iter(i) => match i.next() {
-                    Some(s) => s,
-                    None => {
-                        self.current += 1;
-                        return self.next();
-                    }
-                },
             },
-        };
-        Some(next)
+        }
     }
 }
 
