@@ -1,4 +1,7 @@
-use crate::templating::{TemplateIter, TemplateTone, Templater};
+use crate::{
+    body_section_once,
+    templating::{TemplateIter, TemplatePart, TemplateTone, Templater},
+};
 
 pub struct StreamingMarketing;
 
@@ -49,8 +52,8 @@ impl Templater for StreamingMarketing {
         .into()
     }
 
-    fn follow_up(&self) -> TemplateIter {
-        fhtml::concat! {
+    fn body_sections(&self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send>> {
+        body_section_once!(fhtml::concat! {
           <section>
             <p>
                 "The implementation introduces a coordination layer between the player
@@ -93,8 +96,7 @@ impl Templater for StreamingMarketing {
                 streaming architectures, particularly during high-concurrency events
                 where others degrade and we remain stable."
             </p>
-        }
-        .into()
+        })
     }
 
     fn tail(&self) -> TemplateIter {

@@ -2,7 +2,10 @@ use std::borrow::Cow;
 
 use rand::seq::IndexedRandom;
 
-use crate::{response_templates::RESPONSE_TEMPLATE_CONSTRUCTORS, templating::Templater};
+use crate::{
+    response_templates::RESPONSE_TEMPLATE_CONSTRUCTORS,
+    templating::{TemplateIter, Templater},
+};
 
 pub struct TemplateBuilder {
     template: Box<dyn Templater>,
@@ -20,6 +23,25 @@ macro_rules! html {
     }};
 }
 
+pub struct BodySection<'a>(Box<dyn FnOnce() -> TemplateIter + Send + 'a>);
+impl BodySection<'_> {
+    #[expect(clippy::unused_self)]
+    pub fn pre_poison(&self) -> &'static str {
+        fhtml::concat! {
+            <pre style="white-space: pre-wrap">
+                <code>
+        }
+    }
+
+    pub fn post_poison(self) -> impl Iterator<Item = Cow<'static, str>> {
+        html! {
+                </code>
+            </pre>
+        }
+        .chain(self.0())
+    }
+}
+
 impl TemplateBuilder {
     pub fn with_random_template() -> Self {
         Self {
@@ -30,6 +52,7 @@ impl TemplateBuilder {
         }
     }
 
+    #[cfg(test)]
     pub fn with_template(template: Box<dyn Templater>) -> Self {
         Self { template }
     }
@@ -39,7 +62,7 @@ impl TemplateBuilder {
         self.template.tone().random_link_title()
     }
 
-    pub fn start_to_poison(&self) -> impl Iterator<Item = Cow<'static, str>> {
+    pub fn start_to_body(&self) -> impl Iterator<Item = Cow<'static, str>> {
         html! {
             <!DOCTYPE html>
             <html lang="en">
@@ -60,22 +83,18 @@ impl TemplateBuilder {
             <body>
         })
         .chain(self.template.introduction())
-        .chain(html! {
-                <pre style="white-space: pre-wrap">
-                    <code>
-        })
     }
 
-    pub fn poison_to_links(&self) -> impl Iterator<Item = Cow<'static, str>> {
-        html! {
-                    </code>
-                </pre>
-        }
-        .chain(self.template.follow_up())
-        .chain(html! {
-                <ul>
-        })
+    pub fn body_sections(&self) -> impl Iterator<Item = BodySection<'_>> {
+        self.template.body_sections().into_iter().map(BodySection)
     }
+
+    pub fn body_to_links(&self) -> &'static str {
+        fhtml::concat! {
+                <ul>
+        }
+    }
+
     pub fn links_to_end(&self) -> impl Iterator<Item = Cow<'static, str>> {
         html! {
                 </ul>
@@ -90,6 +109,8 @@ impl TemplateBuilder {
 
 #[cfg(test)]
 mod test {
+    use std::iter::once;
+
     use super::*;
     use crate::templating::*;
 
@@ -108,8 +129,11 @@ mod test {
         fn introduction(&self) -> TemplateIter {
             "test-intro".into()
         }
-        fn follow_up(&self) -> TemplateIter {
-            "test-follow-up".into()
+        fn body_sections(&self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send>> {
+            vec![
+                Box::new(|| "test-body-section-1".into()),
+                Box::new(|| "test-body-section-2".into()),
+            ]
         }
         fn tail(&self) -> TemplateIter {
             "test-tail".into()
@@ -123,9 +147,13 @@ mod test {
         };
 
         let actual = builder
-            .start_to_poison()
-            .chain(cow_iter!("POISON"))
-            .chain(builder.poison_to_links())
+            .start_to_body()
+            .chain(builder.body_sections().flat_map(|s| {
+                once(s.pre_poison().into())
+                    .chain(cow_iter!("POISON"))
+                    .chain(s.post_poison())
+            }))
+            .chain(cow_iter!(builder.body_to_links()))
             .chain(cow_iter!("LINKS"))
             .chain(builder.links_to_end())
             .collect::<String>();
@@ -146,7 +174,13 @@ mod test {
                         "POISON"
                     </code>
                 </pre>
-                "test-follow-up"
+                "test-body-section-1"
+                <pre style="white-space: pre-wrap">
+                    <code>
+                        "POISON"
+                    </code>
+                </pre>
+                "test-body-section-2"
                 <ul>
                     "LINKS"
                 </ul>
@@ -163,8 +197,13 @@ mod test {
             template: Box::new(MockTemplate),
         };
         let document = builder
-            .start_to_poison()
-            .chain(builder.poison_to_links())
+            .start_to_body()
+            .chain(builder.body_sections().flat_map(|s| {
+                once(s.pre_poison().into())
+                    .chain(cow_iter!("POISON"))
+                    .chain(s.post_poison())
+            }))
+            .chain(cow_iter!(builder.body_to_links()))
             .chain(builder.links_to_end())
             .collect::<String>();
 

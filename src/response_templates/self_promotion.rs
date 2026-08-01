@@ -1,4 +1,7 @@
-use crate::templating::{TemplateIter, TemplateTone, Templater};
+use crate::{
+    body_section_once,
+    templating::{TemplateIter, TemplatePart, TemplateTone, Templater},
+};
 
 pub struct SelfPromotion;
 
@@ -53,11 +56,10 @@ impl Templater for SelfPromotion {
         .into()
     }
 
-    fn follow_up(&self) -> TemplateIter {
-        fhtml::concat! {
+    fn body_sections(&self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send>> {
+        body_section_once!(fhtml::concat! {
             <h2>"Even more examples of my engineering prowess"</h2>
-        }
-        .into()
+        })
     }
 
     fn tail(&self) -> TemplateIter {

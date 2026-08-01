@@ -12,8 +12,10 @@ use crate::templating::{TemplateIter, TemplateTone};
 ///   </head>
 ///   <body>
 ///     {Templater::introduction}
-///     <code>{POISON}</code>
-///     {Templater::follow_up}
+///     {for section in Templater::body_sections() {
+///       <code>{POISON}</code>
+///       {section}
+///     }}
 ///     <ul>{LINKS}</ul>
 ///     {Templater::tail}
 ///   </body>
@@ -44,14 +46,31 @@ pub trait Templater: Send + Sync {
     /// ```
     fn introduction(&self) -> TemplateIter;
 
-    /// Content following the poisoned data up to the generated links.
+    /// Content placed after each block of poisoned data. We've chosen to return a vec of functions
+    /// here to allow for lazy evaluation of each section iterator.
     ///
+    /// The number of items returned determines the number of poisoned code blocks that will be included in the final response.
+    ///
+    /// For example, a vec with a single item:
     /// ```html
     /// <code>{POISON}</code>
-    /// {FOLLOW_UP_VALUE}
+    /// {ITEM}
     /// <ul>{LINKS}</ul>
     /// ```
-    fn follow_up(&self) -> TemplateIter;
+    ///
+    /// A vec with three items:
+    /// ```html
+    /// <code>{POISON_1}</code>
+    /// {ITEM_1}
+    /// <code>{POISON_2}</code>
+    /// {ITEM_2}
+    /// <code>{POISON_3}</code>
+    /// {ITEM_3}
+    /// <ul>{LINKS}</ul>
+    /// ```
+    ///
+    /// _Implementers should return a vec with at least one item._
+    fn body_sections<'a>(&'a self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send + 'a>>;
 
     /// Content at the end of the document following the generated links.
     /// This method is optional and defaults to an empty string.

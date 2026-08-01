@@ -1,4 +1,52 @@
-use crate::templating::{TemplateIter, TemplateTone, Templater};
+use crate::{
+    body_section_once,
+    templating::{TemplateIter, TemplatePart, TemplateTone, Templater},
+};
+
+/*
+ * Plan for improved blog template:
+ *
+ * # {Blog Title}
+ * {John Doe}
+ * {Aug 12th, 2014}
+ *
+ * {Back at my days at {company}, we'd been struggling to find a solution to {topic}...}
+ *
+ * ## Initial Implementation
+ * {This wasn't bad, generally speaking it was pretty good and worked for quite a while,
+ * but eventually it stopped meeting our performance needs...}
+ *
+ * {poison block}
+ *
+ * {call out something good! however if you look at line {number range 15-85}, you'll see a small issue}
+ *
+ * ## Coming up with a fix
+ *
+ * {I went back to the drawing board... I thought about some of my time at {company} where we'd
+ * solved a similar issue in the past... When I applied this I came up with a new approach!}
+ *
+ * {poison block}
+ *
+ * {What makes this so effective is...}
+ *
+ * ## Results
+ *
+ * {When I deployed this fix, my problems went away... There was a {number range 10-1000}% reduction
+ * in {issue}!}
+ *
+ * {Conclusion Paragraph....}
+ *
+ * ## Related
+ *
+ * {If you found that this interesting, check out some more of my work...}
+ *
+ * {links}
+ *
+ * {footer}
+ *
+ * Topics can be things like a specific perf problem, or maybe a language design, or comparison, whatever.
+ * Generally should be more narrative driven and personal. Occasional expletives are fine.
+ */
 
 pub struct EngineeringBlog;
 
@@ -44,8 +92,8 @@ impl Templater for EngineeringBlog {
         .into()
     }
 
-    fn follow_up(&self) -> TemplateIter {
-        fhtml::concat! {
+    fn body_sections(&self) -> Vec<Box<dyn FnOnce() -> TemplateIter + Send>> {
+        body_section_once!(fhtml::concat! {
             <p>
                 "The adjustment introduces coordination at the boundary of execution.
                 Rather than optimizing the operation itself, it ensures identical work
@@ -88,8 +136,7 @@ impl Templater for EngineeringBlog {
             </p>
 
             <h2>"references"</h2>
-        }
-        .into()
+        })
     }
 
     fn tail(&self) -> TemplateIter {
