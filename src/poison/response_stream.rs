@@ -8,22 +8,32 @@ use tokio::sync::{Mutex, OwnedSemaphorePermit};
 use uuid::Uuid;
 
 use super::{LinkSettings, LinkSettingsInner};
-use crate::metrics::Metrics;
+use crate::metrics::{Metrics, UserAgent};
 use crate::poison::PoisonClient;
-use crate::utils::cow_helpers;
+use crate::utils::{cow_helpers, stream_size};
 use crate::{MiasmaStream, QueryParams, templating::TemplateBuilder};
+
+pub struct PoisonResponseStreamArgs {
+    pub permit: OwnedSemaphorePermit,
+    pub poison_client: Arc<PoisonClient>,
+    pub link_settings: LinkSettings,
+    pub metrics: Option<(UserAgent, Arc<Mutex<Metrics>>)>,
+}
 
 /// Build the poison response.
 pub fn build_response_stream(
-    poison_client: Arc<PoisonClient>,
-    link_settings: LinkSettings,
-    permit: OwnedSemaphorePermit,
-    metrics: Option<Arc<Mutex<Metrics>>>,
-    user_agent: String,
+    PoisonResponseStreamArgs {
+        permit,
+        poison_client,
+        link_settings,
+        metrics,
+    }: PoisonResponseStreamArgs,
 ) -> impl MiasmaStream {
+    let metrics_for_total = metrics.clone();
+
     let template = TemplateBuilder::with_random_template();
 
-    try_stream! {
+    let stream = try_stream! {
         // carry the semaphore permit through the life of this stream.
         let _permit = permit;
 
@@ -34,7 +44,14 @@ pub fn build_response_stream(
         for body_section in template.body_sections() {
             yield Bytes::from_static(body_section.pre_poison().as_bytes());
 
-            let mut poison = pin!(poison_client.stream_poison(metrics.clone(),user_agent.clone()).await);
+            let mut poison = pin!(stream_size::with_bytes_counted(
+                poison_client.stream_poison().await,
+                async |n| {
+                    if let Some((user_agent, metrics)) = &metrics {
+                        metrics.lock().await.record_poison_bytes(user_agent, n);
+                    }
+                },
+            ));
             while let Some(chunk) = poison.next().await {
                 yield chunk?;
             }
@@ -58,7 +75,13 @@ pub fn build_response_stream(
         for chunk in template.links_to_end() {
             yield cow_helpers::as_bytes(chunk);
         }
-    }
+    };
+
+    stream_size::with_bytes_counted(stream, async move |n| {
+        if let Some((user_agent, metrics)) = &metrics_for_total {
+            metrics.lock().await.record_total_bytes(user_agent, n);
+        }
+    })
 }
 
 fn build_links_stream(

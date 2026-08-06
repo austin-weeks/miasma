@@ -12,10 +12,6 @@ use futures::{StreamExt, TryStreamExt};
 use reqwest::Client;
 use url::Url;
 
-use std::sync::Arc;
-
-use tokio::sync::Mutex;
-
 use crate::{
     MIASMA_USER_AGENT, MiasmaError, MiasmaStream, poison::fallback_poison,
     utils::html_escaper::escape_html_stream,
@@ -54,7 +50,7 @@ impl PoisonClient {
     ///
     /// If the poison source is unreachable or some other error occurs, a fallback poison snippet will be
     /// streamed instead.
-    pub async fn stream_poison(&self, metrics: Option<Arc<Mutex<crate::metrics::Metrics>>>, user_agent: String) -> impl MiasmaStream + use<> {
+    pub async fn stream_poison(&self) -> impl MiasmaStream + use<> {
         let result = self
             .breaker
             .call(
@@ -82,26 +78,15 @@ impl PoisonClient {
         let disable_html_escaping = self.disable_html_escaping;
 
         try_stream! {
-            let mut byte_counter = 0;
             if disable_html_escaping {
                 while let Some(chunk) = poison_stream.next().await {
-                    let chunk = chunk?;
-                    byte_counter += chunk.len() as i64;
-                    yield chunk;
+                    yield chunk?;
                 }
             } else {
                 let mut sanitized = pin!(escape_html_stream(poison_stream));
                 while let Some(chunk) = sanitized.next().await {
-                    let chunk = chunk?;
-                    byte_counter += chunk.len() as i64;
-                    yield chunk;
+                    yield chunk?;
                 }
-            }
-            if let Some(counter) = metrics {
-                counter
-                    .lock()
-                    .await
-                    .count_request(&user_agent, byte_counter);
             }
         }
     }
@@ -122,28 +107,21 @@ impl PoisonClient {
 mod test {
     use axum::{Router, routing::get};
     use bytes::BytesMut;
-    use tokio::net::TcpListener;
+
+    use crate::test_utils::{self, TestServer};
 
     use super::*;
 
-    async fn test_server(response: String) -> Url {
-        let app = Router::new().route("/", get(|| async { response }));
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-
-        let url = Url::parse(&format!("http://{}", listener.local_addr().unwrap())).unwrap();
-        tokio::spawn(async move {
-            axum::serve(listener, app).await.unwrap();
-        });
-        url
+    async fn test_server_with_response(response: String) -> TestServer {
+        test_utils::test_server(Router::new().route("/", get(|| async { response }))).await
     }
 
     #[tokio::test]
     async fn success() {
-        let url = test_server("<poison>".to_owned()).await;
-        let client = PoisonClient::new(url, false);
+        let server = test_server_with_response("<poison>".to_owned()).await;
+        let client = PoisonClient::new(server.url, false);
 
-        let stream = client.stream_poison(None, String::new()).await;
+        let stream = client.stream_poison().await;
         let bytes: BytesMut = stream.try_collect().await.unwrap();
         let result = String::from_utf8(bytes.to_vec()).unwrap();
 
@@ -152,10 +130,10 @@ mod test {
 
     #[tokio::test]
     async fn success_no_escape() {
-        let url = test_server("<poison>".to_owned()).await;
-        let client = PoisonClient::new(url, true);
+        let server = test_server_with_response("<poison>".to_owned()).await;
+        let client = PoisonClient::new(server.url, true);
 
-        let stream = client.stream_poison(None, String::new()).await;
+        let stream = client.stream_poison().await;
         let bytes: BytesMut = stream.try_collect().await.unwrap();
         let result = String::from_utf8(bytes.to_vec()).unwrap();
 
@@ -166,7 +144,7 @@ mod test {
     async fn default_on_failure() {
         let client = PoisonClient::new(Url::parse("http://invalid.").unwrap(), false);
 
-        let stream = client.stream_poison(None, String::new()).await;
+        let stream = client.stream_poison().await;
         let bytes: BytesMut = stream.try_collect().await.unwrap();
         let result = String::from_utf8(bytes.to_vec()).unwrap();
 

@@ -1,6 +1,4 @@
-use std::sync::{
-    Arc,
-};
+use std::sync::Arc;
 
 use axum::{
     Router,
@@ -15,8 +13,8 @@ use tokio::sync::{Mutex, Semaphore, TryAcquireError};
 
 use crate::{
     MiasmaConfig, MiasmaError,
-    metrics::{self, Metrics},
-    poison::{self, LinkSettings, PoisonClient},
+    metrics::{self, Metrics, UserAgent},
+    poison::{self, LinkSettings, PoisonClient, PoisonResponseStreamArgs},
 };
 
 #[derive(Deserialize)]
@@ -116,23 +114,33 @@ async fn app_handler(
 
     let current_depth = query.ok().and_then(|q| q.page).unwrap_or(1);
 
+    let ua_with_metrics = match state.metrics {
+        None => None,
+        Some(metrics) => {
+            let ua = headers
+                .get(header::USER_AGENT)
+                .map_or("NO-USER-AGENT", |ua| {
+                    ua.to_str().unwrap_or("INVALID-USER-AGENT-STRING")
+                });
+            let user_agent = UserAgent::new(ua);
+            metrics.lock().await.count_request(&user_agent);
+            Some((user_agent, metrics))
+        }
+    };
+
     let link_settings = LinkSettings::next(&state.config, current_depth);
 
-    let user_agent = headers
-        .get(header::USER_AGENT)
-        .map_or("NO-USER-AGENT", |ua| {
-            ua.to_str().unwrap_or("INVALID-USER-AGENT-STRING")
-        });
-
     poison::serve_poison(
-        state.poison_client,
-        in_flight_permit,
+        PoisonResponseStreamArgs {
+            permit: in_flight_permit,
+            poison_client: state.poison_client,
+            metrics: ua_with_metrics,
+            link_settings,
+        },
         gzip_response,
-        link_settings,
-        state.metrics,
-        user_agent.to_string(),
     )
-    .await.into_response()
+    .await
+    .into_response()
 }
 
 #[cfg(test)]

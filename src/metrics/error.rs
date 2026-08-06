@@ -4,6 +4,6 @@ use thiserror::Error;
 pub enum MetricsError {
     #[error("failed to connect to metrics database: {0}")]
     DatabaseConnection(#[from] diesel::ConnectionError),
-    #[error("failed to execute database statement: {0}")]
+    #[error("failed to execute database query: {0}")]
     DatabaseQuery(#[from] diesel::result::Error),
 }
