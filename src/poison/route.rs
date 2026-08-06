@@ -1,25 +1,19 @@
-use std::sync::Arc;
-
 use axum::{
     body::Body,
     http::{Response, StatusCode},
     response::IntoResponse,
 };
 use reqwest::header;
-use tokio::sync::OwnedSemaphorePermit;
 
-use super::{LinkSettings, gzip, response_stream};
-use crate::poison::PoisonClient;
+use super::{gzip, response_stream};
+use crate::poison::response_stream::PoisonResponseStreamArgs;
 
 /// Miasma's poison serving trap.
 pub async fn serve_poison(
-    poison_client: Arc<PoisonClient>,
-    in_flight_permit: OwnedSemaphorePermit,
+    poison_stream_args: PoisonResponseStreamArgs,
     gzip_response: bool,
-    link_settings: LinkSettings,
 ) -> impl IntoResponse {
-    let stream =
-        response_stream::build_response_stream(poison_client, link_settings, in_flight_permit);
+    let stream = response_stream::build_response_stream(poison_stream_args);
 
     let body_stream = if gzip_response {
         Body::from_stream(gzip::gzip_stream(stream))

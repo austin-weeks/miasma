@@ -68,6 +68,9 @@ mod router;
 pub mod templating;
 mod utils;
 
+#[cfg(test)]
+pub mod test_utils;
+
 use router::QueryParams;
 
 pub use config::{MiasmaConfig, MiasmaConfigBuilder};

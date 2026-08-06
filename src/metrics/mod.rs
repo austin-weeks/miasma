@@ -1,14 +1,13 @@
 mod error;
 mod metrics_counter;
+mod migrations;
 mod page;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use axum::{Router, routing::get};
 pub use error::MetricsError;
-pub use metrics_counter::Metrics;
-
-use tokio::sync::Mutex;
+pub use metrics_counter::{Metrics, UserAgent};
 
 use crate::config::MetricsConfig;
 

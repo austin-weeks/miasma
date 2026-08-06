@@ -10,6 +10,7 @@ pub use link_settings::LinkSettings;
 use link_settings::LinkSettingsInner;
 
 pub use poison_client::PoisonClient;
+pub use response_stream::PoisonResponseStreamArgs;
 pub use route::serve_poison;
 
 /// Returns a random poisoned code snippet for use when the upstream poison source is unreachable.

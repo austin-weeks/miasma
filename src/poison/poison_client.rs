@@ -107,26 +107,19 @@ impl PoisonClient {
 mod test {
     use axum::{Router, routing::get};
     use bytes::BytesMut;
-    use tokio::net::TcpListener;
+
+    use crate::test_utils::{self, TestServer};
 
     use super::*;
 
-    async fn test_server(response: String) -> Url {
-        let app = Router::new().route("/", get(|| async { response }));
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-
-        let url = Url::parse(&format!("http://{}", listener.local_addr().unwrap())).unwrap();
-        tokio::spawn(async move {
-            axum::serve(listener, app).await.unwrap();
-        });
-        url
+    async fn test_server_with_response(response: String) -> TestServer {
+        test_utils::test_server(Router::new().route("/", get(|| async { response }))).await
     }
 
     #[tokio::test]
     async fn success() {
-        let url = test_server("<poison>".to_owned()).await;
-        let client = PoisonClient::new(url, false);
+        let server = test_server_with_response("<poison>".to_owned()).await;
+        let client = PoisonClient::new(server.url, false);
 
         let stream = client.stream_poison().await;
         let bytes: BytesMut = stream.try_collect().await.unwrap();
@@ -137,8 +130,8 @@ mod test {
 
     #[tokio::test]
     async fn success_no_escape() {
-        let url = test_server("<poison>".to_owned()).await;
-        let client = PoisonClient::new(url, true);
+        let server = test_server_with_response("<poison>".to_owned()).await;
+        let client = PoisonClient::new(server.url, true);
 
         let stream = client.stream_poison().await;
         let bytes: BytesMut = stream.try_collect().await.unwrap();
