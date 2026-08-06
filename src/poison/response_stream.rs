@@ -1,10 +1,10 @@
 use std::pin::pin;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use async_stream::{stream, try_stream};
 use bytes::Bytes;
 use futures::{Stream, StreamExt};
-use tokio::sync::{Mutex, OwnedSemaphorePermit};
+use tokio::sync::OwnedSemaphorePermit;
 use uuid::Uuid;
 
 use super::{LinkSettings, LinkSettingsInner};
@@ -48,7 +48,7 @@ pub fn build_response_stream(
                 poison_client.stream_poison().await,
                 async |n| {
                     if let Some((user_agent, metrics)) = &metrics {
-                        metrics.lock().await.record_poison_bytes(user_agent, n);
+                        metrics.lock().expect("metrics mutex poisoned").record_poison_bytes(user_agent, n);
                     }
                 },
             ));
@@ -79,7 +79,10 @@ pub fn build_response_stream(
 
     stream_size::with_bytes_counted(stream, async move |n| {
         if let Some((user_agent, metrics)) = &metrics_for_total {
-            metrics.lock().await.record_total_bytes(user_agent, n);
+            metrics
+                .lock()
+                .expect("metrics mutex poisoned")
+                .record_total_bytes(user_agent, n);
         }
     })
 }

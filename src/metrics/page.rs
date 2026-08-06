@@ -33,7 +33,7 @@ pub async fn metrics_handler(
             .unwrap();
     }
 
-    let mut counter = state.counter.lock().await;
+    let mut counter = state.counter.lock().expect("metrics mutex poisoned");
     counter.flush_blocking();
 
     let page_number = page.map_or(1, |p| if p == 0 { 1 } else { p });
@@ -88,7 +88,6 @@ fn stream_metrics_page(
         });
 
         for (ind, (user_agent, row)) in entries.iter().enumerate() {
-            // TODO: ensure the title thing works as a tooltip
             yield Bytes::from(fhtml::format!{
                         <tr>
                             <td>{ind+1 + (page_number.saturating_sub(1) * RESULTS_PER_PAGE) as usize}</td>

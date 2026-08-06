@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use axum::{
     Router,
@@ -9,7 +9,7 @@ use axum::{
 };
 use reqwest::{StatusCode, header};
 use serde::Deserialize;
-use tokio::sync::{Mutex, Semaphore, TryAcquireError};
+use tokio::sync::{Semaphore, TryAcquireError};
 
 use crate::{
     MiasmaConfig, MiasmaError,
@@ -123,7 +123,10 @@ async fn app_handler(
                     ua.to_str().unwrap_or("INVALID-USER-AGENT-STRING")
                 });
             let user_agent = UserAgent::new(ua);
-            metrics.lock().await.count_request(&user_agent);
+            metrics
+                .lock()
+                .expect("metrics mutex poisoned")
+                .count_request(&user_agent);
             Some((user_agent, metrics))
         }
     };

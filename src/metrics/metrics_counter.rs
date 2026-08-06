@@ -95,7 +95,9 @@ impl Metrics {
                 },
             );
         }
-        self.counts.get_mut(user_agent.inner()).unwrap()
+        self.counts
+            .get_mut(user_agent.inner())
+            .expect("we just inserted this user agent if not present")
     }
 
     /// Flush metrics to the database in a non-blocking background task if full.
