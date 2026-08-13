@@ -1,6 +1,5 @@
 use rand::seq::IndexedRandom;
 
-mod gzip;
 mod link_settings;
 mod poison_client;
 mod response_stream;

@@ -1383,6 +1383,7 @@ dependencies = [
  "tower",
  "url",
  "uuid",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -3128,6 +3129,11 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.6.7"
+source = "git+https://github.com/austin-weeks/zlib-rs?rev=5ce234b#5ce234bc85b8fa2d7a7827308e05b0bf370bf256"
 
 [[package]]
 name = "zmij"

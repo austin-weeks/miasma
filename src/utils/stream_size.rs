@@ -29,16 +29,9 @@ pub fn with_bytes_counted(
 mod test {
     use async_stream::try_stream;
 
-    use super::*;
+    use crate::test_utils;
 
-    async fn drain_stream(stream: impl MiasmaStream) -> String {
-        let mut out = String::new();
-        let mut stream = pin!(stream);
-        while let Some(chunk) = stream.next().await {
-            out.push_str(str::from_utf8(&chunk.unwrap()).unwrap());
-        }
-        out
-    }
+    use super::*;
 
     #[tokio::test]
     async fn counts_bytes_and_does_not_mutate() {
@@ -51,7 +44,7 @@ mod test {
         let mut bytes = 0;
         let with_size = with_bytes_counted(stream, async |n| bytes = n);
 
-        let result = drain_stream(with_size).await;
+        let result = test_utils::drain_byte_stream(with_size).await;
         #[allow(clippy::needless_as_bytes)]
         let expected_size = "hello world".as_bytes().len();
 

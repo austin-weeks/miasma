@@ -61,10 +61,7 @@ impl PoisonClient {
             .await;
 
         if let Err(failsafe::Error::Inner(ref e)) = result {
-            eprintln!(
-                "Error fetching from {} - responding with fallback poison snippet: {e}",
-                self.poison_source,
-            );
+            eprintln!("Error fetching poison - responding with fallback poison snippet: {e}");
         }
 
         let mut poison_stream = match result {

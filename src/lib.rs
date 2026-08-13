@@ -60,6 +60,7 @@
 
 mod config;
 mod error;
+mod gzip;
 mod metrics;
 mod poison;
 mod response_templates;
