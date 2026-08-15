@@ -71,11 +71,12 @@ impl GzipSettings {
 }
 
 impl Default for GzipSettings {
+    // We may change this later, but for now we'll just leave at these settings (9/11/3)
     fn default() -> Self {
         Self {
-            effort: Effort::Minimal,
-            mem_level: MemLevel::UltraLow,
+            effort: Effort::Best,
             window_size: WindowSize::Small,
+            mem_level: MemLevel::Low,
         }
     }
 }

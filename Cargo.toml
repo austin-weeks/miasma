@@ -32,10 +32,10 @@ tokio-util = { version = "0.7.18", features = ["io"] }
 toml = { version = "1.1.2", features = [ "serde" ] }
 url = { version = "2.5.8", features = ["serde"] }
 uuid = { version = "1.22.0", features = ["v4"] }
-zlib-rs = "0.6.7"
+zlib-rs = "0.6.7" # see patch below
 
 [patch.crates-io]
-zlib-rs = { git = "https://github.com/austin-weeks/zlib-rs", rev = "5ce234b" }
+zlib-rs = { git = "https://github.com/trifectatechfoundation/zlib-rs", rev = "aeded1c" }
 
 [dev-dependencies]
 async-compression = { version = "0.4.41", features = ["gzip"] }

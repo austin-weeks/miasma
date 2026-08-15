@@ -4,7 +4,7 @@ pub mod html_escaper;
 pub mod stream_size;
 
 #[macro_export]
-/// Ternary expression - equivalent to `if { a } else { b }`.
+/// Ternary expression - equivalent to `if cond { a } else { b }`.
 ///
 /// ```
 /// use miasma::ternary;

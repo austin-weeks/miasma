@@ -268,7 +268,7 @@ mod test {
     }
 
     // We could go crazy with unit tests, but most of that functionality is covered by the above
-    // round trip test. I've included a couple tests excercising bugs that I had to work through.
+    // round trip test. I've included a couple tests exercising bugs that I had to work through.
 
     #[tokio::test]
     /// zlib will return a `BufError` if we try to encode an empty input buffer.
@@ -281,12 +281,11 @@ mod test {
             yield Bytes::from("c");
             yield Bytes::new();
         };
-        let expected = "abc";
-        let gzip_stream = LowMemGzipStream::<io::Error>::new(stream);
 
+        let gzip_stream = LowMemGzipStream::<io::Error>::new(stream);
         let result = decode_and_drain(gzip_stream).await;
 
-        assert_eq!(result, expected);
+        assert_eq!(result, "abc");
     }
 
     #[test]

@@ -6,7 +6,7 @@ use tokio_util::io::{ReaderStream, StreamReader};
 
 use crate::MiasmaStream;
 
-const DEFAULT_BUFFER_SIZE: usize = 1028; // 1 KB
+const DEFAULT_BUFFER_SIZE: usize = 1024; // 1 KB
 
 /// Buffer the stream into fixed size chunks.
 #[allow(unused)]
@@ -20,5 +20,5 @@ where
     let stream = stream.map_err(io::Error::other);
     let reader = StreamReader::new(stream);
     let buf = BufReader::with_capacity(buffer_size.unwrap_or(DEFAULT_BUFFER_SIZE), reader);
-    ReaderStream::new(buf)
+    ReaderStream::with_capacity(buf, buffer_size.unwrap_or(DEFAULT_BUFFER_SIZE))
 }

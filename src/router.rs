@@ -148,6 +148,8 @@ async fn app_handler(
 
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::{self, TestServer};
+
     use super::*;
     use axum::{
         body::Body,
@@ -155,14 +157,19 @@ mod tests {
     };
     use serial_test::serial;
     use tower::ServiceExt;
-    use url::Url;
+
+    async fn test_server() -> TestServer {
+        test_utils::test_server(Router::new().fallback(get("ok"))).await
+    }
 
     #[tokio::test]
     #[serial]
     async fn happy_path() {
+        let server = test_server().await;
+
         let app = new_miasma_router(MiasmaConfig {
             max_in_flight: 1,
-            poison_source: Url::parse("https://example.com").unwrap(),
+            poison_source: server.url,
             ..Default::default()
         })
         .unwrap();
@@ -179,9 +186,11 @@ mod tests {
     #[serial]
     #[allow(clippy::similar_names)]
     async fn returns_429_when_max_in_flight_reached() {
+        let server = test_server().await;
+
         let app = new_miasma_router(MiasmaConfig {
             max_in_flight: 1,
-            poison_source: Url::parse("https://example.com").unwrap(),
+            poison_source: server.url,
             ..Default::default()
         })
         .unwrap();
