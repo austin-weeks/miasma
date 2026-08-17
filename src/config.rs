@@ -74,6 +74,10 @@ pub struct MiasmaConfig {
     #[builder(default = None)]
     #[builder(setter(custom))]
     pub metrics: Option<MetricsConfig>,
+
+    /// Disable poison source response caching.
+    #[builder(default = false)]
+    pub no_poison_cache: bool,
 }
 
 impl MiasmaConfig {
@@ -120,7 +124,7 @@ impl MiasmaConfigBuilder {
     }
 
     /// Build the configured `MiasmaConfig`.
-    #[allow(clippy::missing_panics_doc)]
+    #[expect(clippy::missing_panics_doc)]
     pub fn build(&self) -> MiasmaConfig {
         self.unsafe_build()
             .expect("build only errors for unset required fields - all config fields are optional")

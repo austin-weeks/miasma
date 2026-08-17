@@ -11,6 +11,9 @@ pub use metrics_counter::{Metrics, UserAgent};
 
 use crate::config::MetricsConfig;
 
+pub const MISSING_USER_AGENT: &str = "NO-USER-AGENT";
+pub const INVALID_USER_AGENT: &str = "INVALID-USER-AGENT-STRING";
+
 const RESULTS_PER_PAGE: u32 = 50;
 
 #[derive(Clone)]
