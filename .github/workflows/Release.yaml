@@ -16,6 +16,11 @@ on:
         required: false
         default: false
         type: boolean
+      skip-github-release:
+        description: "Skip publishing a GitHub release. You should ONLY do this if a release previously succeeded but publishing to Docker failed."
+        required: false
+        default: false
+        type: boolean
       skip-docker-publish:
         description: "Skip publishing to Docker Hub. You should ONLY do this if publishing previously succeeded but releasing to GitHub failed."
         required: false
@@ -72,6 +77,7 @@ jobs:
   Push-Tag:
     needs: Publish-Crate
     runs-on: ubuntu-latest
+    if: ${{ inputs.skip-github-release == false }}
     outputs:
       github_tag: ${{ steps.push-tag.outputs.github_tag }}
     steps:
