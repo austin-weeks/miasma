@@ -74,6 +74,10 @@ pub struct AppArgs {
     #[arg(long, default_value_t = Url::parse(miasma::DEFAULT_POISON_SOURCE).unwrap())]
     pub poison_source: Url,
 
+    /// Disable poison source response caching.
+    #[arg(long, default_value_t = false)]
+    pub no_poison_cache: bool,
+
     #[command(flatten)]
     pub metrics: Option<MetricsConfig>,
 }
@@ -82,6 +86,7 @@ pub struct AppArgs {
 /// If user provided a CLI flag, it overrides config file values.
 struct OverrideMerger(ArgMatches);
 impl OverrideMerger {
+    /// Use `cli_value` if flag `field` was provided, else `config_value` if Some.
     fn merge<T>(&self, field: &str, cli_value: T, config_value: Option<T>) -> T {
         // Use config file value if present and not overridden
         if let Some(val) = config_value
@@ -168,6 +173,11 @@ impl AppArgs {
                 config.unsafe_allow_html,
             ),
             poison_source: merger.merge("poison_source", self.poison_source, config.poison_source),
+            no_poison_cache: merger.merge(
+                "no_poison_cache",
+                self.no_poison_cache,
+                config.disable_poison_cache,
+            ),
             metrics,
         }
     }
@@ -213,6 +223,10 @@ impl AppArgs {
             eprintln!("{} HTML escaping is disabled...", "Warning:".red());
         }
 
+        if self.no_poison_cache {
+            eprintln!("Poison response caching is {}...", "disabled".yellow());
+        }
+
         if let Some(MetricsConfig {
             metrics_db_path: Some(db_path),
             metrics_username: Some(username),
@@ -230,7 +244,10 @@ impl AppArgs {
                 db_path.blue(),
             );
         } else {
-            eprintln!("Metrics are disabled and will not be collected...");
+            eprintln!(
+                "Metrics are {} and will not be collected...",
+                "disabled".yellow()
+            );
         }
     }
 
@@ -247,6 +264,7 @@ impl AppArgs {
             .link_prefix(&self.link_prefix)
             .force_gzip(self.force_gzip)
             .unsafe_allow_html(self.unsafe_allow_html)
+            .no_poison_cache(self.no_poison_cache)
             .poison_source(self.poison_source.clone());
 
         if let Some(d) = self.max_depth.0 {
@@ -340,6 +358,7 @@ mod test {
             link_count: 8,
             max_depth: MaxDepth(Some(8)),
             poison_source: poison_source.clone(),
+            no_poison_cache: true,
             force_gzip: true,
             unsafe_allow_html: true,
 
@@ -360,6 +379,7 @@ mod test {
         assert_eq!(config.link_count, 8);
         assert_eq!(config.max_depth, Some(8));
         assert_eq!(config.poison_source, poison_source);
+        assert!(config.no_poison_cache);
         assert!(config.force_gzip);
         assert!(config.unsafe_allow_html);
 
@@ -388,6 +408,7 @@ mod test {
             force_gzip: bool::default(),
             unsafe_allow_html: bool::default(),
             poison_source: Url::parse("https://example.com").unwrap(),
+            no_poison_cache: bool::default(),
             metrics: None,
         };
 
@@ -423,6 +444,7 @@ mod test {
             assert_eq!(result.max_depth, MaxDepth::default());
             assert!(!result.force_gzip);
             assert!(!result.unsafe_allow_html);
+            assert!(!result.no_poison_cache);
             assert_matches!(result.metrics, None);
             assert_eq!(
                 result.poison_source,
@@ -444,6 +466,7 @@ mod test {
                 force_gzip: Some(true),
                 unsafe_allow_html: Some(true),
                 poison_source: Some(Url::parse("https://github.com").unwrap()),
+                disable_poison_cache: Some(true),
                 server: ServerFileConfig {
                     host: Some("test-host".into()),
                     port: Some(7000),
@@ -465,6 +488,7 @@ mod test {
             assert!(result.force_gzip);
             assert!(result.unsafe_allow_html);
             assert_eq!(result.poison_source.as_str(), "https://github.com/");
+            assert!(result.no_poison_cache);
             assert_eq!(result.host, "test-host");
             assert_eq!(result.port, 7000);
             #[cfg(unix)]
@@ -492,6 +516,7 @@ mod test {
                 "--unsafe-allow-html",
                 "--poison-source",
                 "https://example.com",
+                "--no-poison-cache",
                 "--host",
                 "test-host",
                 "--port",
@@ -512,6 +537,7 @@ mod test {
                 force_gzip: Some(false),
                 unsafe_allow_html: Some(false),
                 poison_source: Some(Url::parse("https://BAD.com").unwrap()),
+                disable_poison_cache: Some(false),
                 server: ServerFileConfig {
                     host: Some("BAD".into()),
                     port: Some(0),
@@ -527,6 +553,7 @@ mod test {
             assert!(result.force_gzip);
             assert!(result.unsafe_allow_html);
             assert_eq!(result.poison_source.as_str(), "https://example.com/");
+            assert!(result.no_poison_cache);
             assert_eq!(result.host, "test-host");
             assert_eq!(result.port, 7000);
             #[cfg(unix)]

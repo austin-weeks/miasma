@@ -14,7 +14,11 @@ use tokio::sync::{Semaphore, TryAcquireError};
 use crate::{
     MiasmaConfig, MiasmaError,
     metrics::{self, Metrics, UserAgent},
-    poison::{self, LinkSettings, PoisonClient, PoisonResponseStreamArgs},
+    poison::{
+        self, HtmlEscapeMode, LinkSettings, PoisonClient, PoisonResponseStreamArgs, PoisonSource,
+        cache::{self, PoisonCache},
+    },
+    ternary,
 };
 
 #[derive(Deserialize)]
@@ -29,7 +33,7 @@ impl QueryParams {
 #[derive(Clone)]
 pub struct AppState {
     metrics: Option<Arc<Mutex<Metrics>>>,
-    poison_client: Arc<PoisonClient>,
+    poison_source: Arc<PoisonSource>,
     config: Arc<MiasmaConfig>,
     in_flight_sem: Arc<Semaphore>,
 }
@@ -58,6 +62,23 @@ pub struct AppState {
 /// Returns an error if the metrics feature is enabled and initializing the
 /// database fails.
 pub fn new_miasma_router(config: MiasmaConfig) -> Result<Router, MiasmaError> {
+    let in_flight_sem = Arc::new(Semaphore::new(config.max_in_flight as usize));
+    let escape_mode = ternary!(
+        config.unsafe_allow_html,
+        HtmlEscapeMode::NoEscape,
+        HtmlEscapeMode::Escape,
+    );
+    let poison_client = PoisonClient::new(config.poison_source.clone(), escape_mode);
+
+    let poison_source = Arc::new(ternary!(
+        config.no_poison_cache,
+        PoisonSource::new(poison_client, escape_mode),
+        PoisonSource::new(poison_client, escape_mode).with_cache(
+            PoisonCache::new(),
+            cache::make_cache_hit_fn(in_flight_sem.clone(), config.max_in_flight as usize),
+        )
+    ));
+
     let metrics = match &config.metrics {
         None => None,
         Some(c) => {
@@ -65,16 +86,15 @@ pub fn new_miasma_router(config: MiasmaConfig) -> Result<Router, MiasmaError> {
             Some(Arc::new(Mutex::new(metrics)))
         }
     };
+
     let metrics_router = metrics::new_metrics_router(config.metrics.as_ref(), metrics.clone());
+
     let router = Router::new()
         .fallback(get(app_handler))
         .with_state(AppState {
             metrics,
-            in_flight_sem: Arc::new(Semaphore::new(config.max_in_flight as usize)),
-            poison_client: Arc::new(PoisonClient::new(
-                config.poison_source.clone(),
-                config.unsafe_allow_html,
-            )),
+            poison_source,
+            in_flight_sem,
             config: Arc::new(config),
         })
         .merge(metrics_router);
@@ -119,8 +139,8 @@ async fn app_handler(
         Some(metrics) => {
             let ua = headers
                 .get(header::USER_AGENT)
-                .map_or("NO-USER-AGENT", |ua| {
-                    ua.to_str().unwrap_or("INVALID-USER-AGENT-STRING")
+                .map_or(metrics::MISSING_USER_AGENT, |ua| {
+                    ua.to_str().unwrap_or(metrics::INVALID_USER_AGENT)
                 });
             let user_agent = UserAgent::new(ua);
             metrics
@@ -136,7 +156,7 @@ async fn app_handler(
     poison::serve_poison(
         PoisonResponseStreamArgs {
             permit: in_flight_permit,
-            poison_client: state.poison_client,
+            poison_source: state.poison_source,
             metrics: ua_with_metrics,
             link_settings,
         },

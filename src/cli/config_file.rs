@@ -28,6 +28,7 @@ pub struct ConfigFile {
     pub force_gzip: Option<bool>,
     pub unsafe_allow_html: Option<bool>,
     pub poison_source: Option<Url>,
+    pub disable_poison_cache: Option<bool>,
     #[serde(default)]
     pub server: ServerFileConfig,
     pub metrics: Option<MetricsFileConfig>,
@@ -78,7 +79,7 @@ mod test {
     use std::io::Write;
     use tempfile::Builder;
 
-    fn check_loaded_file(config: ConfigFile) {
+    fn assert_file_matches_expected(config: ConfigFile) {
         assert_eq!(config.max_in_flight, Some(8));
         assert_eq!(config.link_prefix, Some("test".into()));
         assert_eq!(config.link_count, Some(8));
@@ -89,6 +90,7 @@ mod test {
             config.poison_source.unwrap().as_str(),
             "https://example.com/"
         );
+        assert_eq!(config.disable_poison_cache, Some(true));
 
         let metrics = config.metrics.unwrap();
 
@@ -116,6 +118,7 @@ mod test {
 "force_gzip": true,
 "unsafe_allow_html": true,
 "poison_source": "https://example.com/",
+"disable_poison_cache": true,
 "metrics": {
   "db_path": "miasma.db",
   "username": "admin",
@@ -126,7 +129,7 @@ mod test {
         let mut file = Builder::new().suffix(".json").tempfile().unwrap();
         write!(file, "{text}").unwrap();
         let config = load_config_file(file.path().to_str().unwrap()).unwrap();
-        check_loaded_file(config);
+        assert_file_matches_expected(config);
     }
 
     #[test]
@@ -143,6 +146,7 @@ max_depth: 8
 force_gzip: true
 unsafe_allow_html: true
 poison_source: https://example.com/
+disable_poison_cache: true
 metrics:
   db_path: miasma.db
   username: admin
@@ -151,7 +155,7 @@ metrics:
         let mut file = Builder::new().suffix(".yaml").tempfile().unwrap();
         write!(file, "{text}").unwrap();
         let config = load_config_file(file.path().to_str().unwrap()).unwrap();
-        check_loaded_file(config);
+        assert_file_matches_expected(config);
     }
 
     #[test]
@@ -164,6 +168,7 @@ max_depth = 8
 force_gzip = true
 unsafe_allow_html = true
 poison_source = "https://example.com/"
+disable_poison_cache = true
 
 [server]
 port = 8080
@@ -179,7 +184,7 @@ endpoint = "/serve-metrics"
         let mut file = Builder::new().suffix(".toml").tempfile().unwrap();
         write!(file, "{text}").unwrap();
         let config = load_config_file(file.path().to_str().unwrap()).unwrap();
-        check_loaded_file(config);
+        assert_file_matches_expected(config);
     }
 
     #[test]

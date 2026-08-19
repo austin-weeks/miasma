@@ -5,6 +5,7 @@ max_depth = 10
 force_gzip = true
 unsafe_allow_html = false
 poison_source = "https://example.com"
+disable_poison_cache = false
 
 [server]
 host = "127.0.0.1"

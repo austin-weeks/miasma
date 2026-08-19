@@ -1,4 +1,8 @@
+use std::{fmt::Debug, pin::pin};
+
 use axum::Router;
+use bytes::Bytes;
+use futures::{Stream, StreamExt};
 use tempfile::NamedTempFile;
 use tokio::{net::TcpListener, task::JoinHandle};
 use url::Url;
@@ -30,4 +34,20 @@ pub fn temp_file() -> (NamedTempFile, String) {
     let temp_file = NamedTempFile::new().unwrap();
     let path = temp_file.path().to_str().unwrap().to_owned();
     (temp_file, path)
+}
+
+/// Drains the provided stream and collects into a `String`.
+///
+/// # Panics
+/// Panics if a yielded `Result` chunk is `Err` or yielded `Bytes` is not a valid UTF-8 string.
+pub async fn drain_byte_stream<E>(stream: impl Stream<Item = Result<Bytes, E>>) -> String
+where
+    E: Debug,
+{
+    let mut buf = String::new();
+    let mut stream = pin!(stream);
+    while let Some(chunk) = stream.next().await {
+        buf.push_str(str::from_utf8(&chunk.unwrap()).unwrap());
+    }
+    buf
 }

@@ -40,7 +40,7 @@ pub async fn check_for_new_version() {
     .await;
 
     #[cfg(debug_assertions)]
-    #[allow(clippy::used_underscore_binding)]
+    #[expect(clippy::used_underscore_binding)]
     if let Err(e) = _res {
         eprintln!("Failed to check for latest version: {e}");
     }
