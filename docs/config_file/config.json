@@ -10,6 +10,7 @@
   "force_gzip": true,
   "unsafe_allow_html": false,
   "poison_source": "https://example.com",
+  "disable_poison_cache": false,
   "metrics": {
     "db_path": "miasma.db",
     "username": "admin",

@@ -9,13 +9,13 @@ use uuid::Uuid;
 
 use super::{LinkSettings, LinkSettingsInner};
 use crate::metrics::{Metrics, UserAgent};
-use crate::poison::PoisonClient;
+use crate::poison::PoisonSource;
 use crate::utils::{cow_helpers, stream_size};
 use crate::{MiasmaStream, QueryParams, templating::TemplateBuilder};
 
 pub struct PoisonResponseStreamArgs {
     pub permit: OwnedSemaphorePermit,
-    pub poison_client: Arc<PoisonClient>,
+    pub poison_source: Arc<PoisonSource>,
     pub link_settings: LinkSettings,
     pub metrics: Option<(UserAgent, Arc<Mutex<Metrics>>)>,
 }
@@ -24,7 +24,7 @@ pub struct PoisonResponseStreamArgs {
 pub fn build_response_stream(
     PoisonResponseStreamArgs {
         permit,
-        poison_client,
+        poison_source,
         link_settings,
         metrics,
     }: PoisonResponseStreamArgs,
@@ -45,7 +45,7 @@ pub fn build_response_stream(
             yield Bytes::from_static(body_section.pre_poison().as_bytes());
 
             let mut poison = pin!(stream_size::with_bytes_counted(
-                poison_client.stream_poison().await,
+                poison_source.stream_poison().await,
                 async |n| {
                     if let Some((user_agent, metrics)) = &metrics {
                         metrics.lock().expect("metrics mutex poisoned").record_poison_bytes(user_agent, n);

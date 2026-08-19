@@ -14,7 +14,7 @@ pub mod stream_size;
 /// assert_eq!(result, "true case");
 /// ```
 macro_rules! ternary {
-    ($condition:expr, $true_case:expr, $false_case:expr) => {
+    ($condition:expr, $true_case:expr, $false_case:expr$(,)?) => {
         if $condition { $true_case } else { $false_case }
     };
 }

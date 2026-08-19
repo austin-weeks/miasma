@@ -45,7 +45,7 @@ mod test {
         let with_size = with_bytes_counted(stream, async |n| bytes = n);
 
         let result = test_utils::drain_byte_stream(with_size).await;
-        #[allow(clippy::needless_as_bytes)]
+        #[expect(clippy::needless_as_bytes)]
         let expected_size = "hello world".as_bytes().len();
 
         assert_eq!(result, "hello world");

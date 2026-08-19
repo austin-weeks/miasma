@@ -5,9 +5,10 @@ use axum::{
 };
 use reqwest::header;
 
-use super::response_stream;
 use crate::{
-    gzip::LowMemGzipStream, poison::response_stream::PoisonResponseStreamArgs, utils::buffered,
+    gzip::LowMemGzipStream,
+    poison::response_stream::{self, PoisonResponseStreamArgs},
+    utils::buffered,
 };
 
 /// Miasma's poison serving trap.

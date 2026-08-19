@@ -1,7 +1,5 @@
-use std::{pin::pin, time::Duration};
+use std::time::Duration;
 
-use async_stream::try_stream;
-use bytes::Bytes;
 use failsafe::{
     StateMachine,
     backoff::EqualJittered,
@@ -13,7 +11,7 @@ use reqwest::Client;
 use url::Url;
 
 use crate::{
-    MIASMA_USER_AGENT, MiasmaError, MiasmaStream, poison::fallback_poison,
+    MIASMA_USER_AGENT, MiasmaError, MiasmaStream, poison::HtmlEscapeMode,
     utils::html_escaper::escape_html_stream,
 };
 
@@ -24,14 +22,16 @@ pub struct PoisonClient {
         (),
     >,
     poison_source: Url,
-    disable_html_escaping: bool,
+    escape_mode: HtmlEscapeMode,
 }
 
 impl PoisonClient {
-    pub fn new(poison_source: Url, disable_html_escaping: bool) -> Self {
+    const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
+
+    pub fn new(poison_source: Url, escape_mode: HtmlEscapeMode) -> Self {
         let client = Client::builder()
             .gzip(true) // Poison Fountain serves gzipped data
-            .timeout(Duration::from_secs(5))
+            .timeout(Self::REQUEST_TIMEOUT)
             .user_agent(MIASMA_USER_AGENT)
             .build()
             .expect("should be able to build client");
@@ -42,15 +42,12 @@ impl PoisonClient {
             client,
             breaker,
             poison_source,
-            disable_html_escaping,
+            escape_mode,
         }
     }
 
     /// Fetch poisoned training data.
-    ///
-    /// If the poison source is unreachable or some other error occurs, a fallback poison snippet will be
-    /// streamed instead.
-    pub async fn stream_poison(&self) -> impl MiasmaStream + use<> {
+    pub async fn stream_poison(&self) -> Option<impl MiasmaStream + use<>> {
         let result = self
             .breaker
             .call(
@@ -60,32 +57,19 @@ impl PoisonClient {
             )
             .await;
 
-        if let Err(failsafe::Error::Inner(ref e)) = result {
-            eprintln!("Error fetching poison - responding with fallback poison snippet: {e}");
+        if let Err(failsafe::Error::Inner(e)) = &result {
+            // The error message is already well formatted
+            eprintln!("{e}");
         }
 
-        let mut poison_stream = match result {
-            Ok(s) => s.boxed(),
-            Err(_) => try_stream! {
-                yield Bytes::from(fallback_poison());
-            }
-            .boxed(),
+        let Ok(poison_stream) = result else {
+            return None;
         };
 
-        let disable_html_escaping = self.disable_html_escaping;
-
-        try_stream! {
-            if disable_html_escaping {
-                while let Some(chunk) = poison_stream.next().await {
-                    yield chunk?;
-                }
-            } else {
-                let mut sanitized = pin!(escape_html_stream(poison_stream));
-                while let Some(chunk) = sanitized.next().await {
-                    yield chunk?;
-                }
-            }
-        }
+        Some(match self.escape_mode {
+            HtmlEscapeMode::Escape => escape_html_stream(poison_stream).left_stream(),
+            HtmlEscapeMode::NoEscape => poison_stream.right_stream(),
+        })
     }
 
     async fn fetch_poison(&self) -> Result<impl MiasmaStream + use<>, MiasmaError> {
@@ -116,9 +100,9 @@ mod test {
     #[tokio::test]
     async fn success() {
         let server = test_server_with_response("<poison>".to_owned()).await;
-        let client = PoisonClient::new(server.url, false);
+        let client = PoisonClient::new(server.url, HtmlEscapeMode::Escape);
 
-        let stream = client.stream_poison().await;
+        let stream = client.stream_poison().await.unwrap();
         let bytes: BytesMut = stream.try_collect().await.unwrap();
         let result = String::from_utf8(bytes.to_vec()).unwrap();
 
@@ -128,9 +112,9 @@ mod test {
     #[tokio::test]
     async fn success_no_escape() {
         let server = test_server_with_response("<poison>".to_owned()).await;
-        let client = PoisonClient::new(server.url, true);
+        let client = PoisonClient::new(server.url, HtmlEscapeMode::NoEscape);
 
-        let stream = client.stream_poison().await;
+        let stream = client.stream_poison().await.unwrap();
         let bytes: BytesMut = stream.try_collect().await.unwrap();
         let result = String::from_utf8(bytes.to_vec()).unwrap();
 
@@ -138,13 +122,13 @@ mod test {
     }
 
     #[tokio::test]
-    async fn default_on_failure() {
-        let client = PoisonClient::new(Url::parse("http://invalid.").unwrap(), false);
+    async fn none_on_failure() {
+        let client = PoisonClient::new(
+            Url::parse("http://invalid.").unwrap(),
+            HtmlEscapeMode::Escape,
+        );
 
         let stream = client.stream_poison().await;
-        let bytes: BytesMut = stream.try_collect().await.unwrap();
-        let result = String::from_utf8(bytes.to_vec()).unwrap();
-
-        assert!(!result.is_empty());
+        assert!(stream.is_none());
     }
 }
