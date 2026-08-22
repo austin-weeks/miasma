@@ -7,9 +7,7 @@ on:
 permissions:
   contents: read
   pages: write
-
-  # do I need this?
-  # id-token: write
+  id-token: write
 
 jobs:
   Deploy-Docs:
