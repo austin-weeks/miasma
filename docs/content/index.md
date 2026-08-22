@@ -1,3 +1,8 @@
+---
+title: Miasma
+icon: lucide/shell
+---
+
 # 🌀 Miasma
 
 [![No AI](https://custom-icon-badges.demolab.com/badge/No%20AI-2f2f2f?logo=non-ai&logoColor=white&logoSize=auto)](#)
@@ -16,8 +21,9 @@ _Miasma_ is here to help you fight back! Spin up the server and point any malici
 
 _Miasma_ is lightning fast and has a minimal memory footprint - you should not have to waste compute resources fending off the internet's leeches.
 
-> [!CAUTION]
-> There is inherent risk in deploying this software. Please fully read [configuration](#configuration) and [disclaimer](#disclaimer) before use.
+!!! warning
+
+    There is inherent risk in deploying this software. Please fully read [configuration](#configuration) and [disclaimer](#disclaimer) before use.
 
 ## Usage
 
@@ -37,15 +43,7 @@ Alternatively, download a pre-built binary from [releases](https://github.com/au
 
 Community-maintained packages are also available for a variety of package managers:
 
-<a href="https://repology.org/project/miasma/versions">
-    <img
-        src="https://repology.org/badge/vertical-allrepos/miasma.svg?exclude_unsupported=1&minversion=0.2"
-        alt="Packaging status"
-    >
-</a>
-
-<br>
-<br>
+[Packaging Status](https://repology.org/project/miasma/versions)
 
 Start _Miasma_ with default configuration:
 

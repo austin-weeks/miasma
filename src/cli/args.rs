@@ -314,7 +314,7 @@ impl FromStr for MaxDepth {
 #[derive(Args, Debug, Clone)]
 #[expect(clippy::struct_field_names)]
 pub struct MetricsConfig {
-    #[expect(clippy::doc_markdown)]
+    #[allow(clippy::doc_markdown)]
     /// Path to SQLite database file (e.g. 'miasma.db')
     #[arg(long, requires_all = ["metrics_username", "metrics_password"])]
     #[arg(help_heading = "Metrics Options")]
