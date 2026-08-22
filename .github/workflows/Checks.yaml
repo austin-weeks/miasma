@@ -38,6 +38,20 @@ jobs:
       - name: Verify Publish-Ready
         run: cargo publish --dry-run
 
+  Documentation-Site-Test:
+    runs-on: ubuntu-latest
+    # This has no impact on publishing the actual source code
+    if: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+      - run: pip install zensical
+
+      - name: Check Docs Build
+        run: cd docs && zensical build --clean --strict
+
   Docker-Image-Test:
     runs-on: ubuntu-latest
     steps:

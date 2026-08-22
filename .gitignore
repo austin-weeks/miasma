@@ -4,6 +4,9 @@
 # Crusty Rusty
 /target
 
+# Docs Build
+docs/site
+
 # Don't look
 .env
 
