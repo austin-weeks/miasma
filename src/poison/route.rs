@@ -5,9 +5,10 @@ use axum::{
 };
 use reqwest::header;
 
-use crate::poison::{
-    gzip,
-    response_stream::{self, PoisonResponseStreamArgs},
+use crate::{
+    gzip::LowMemGzipStream,
+    poison::response_stream::{self, PoisonResponseStreamArgs},
+    utils::buffered,
 };
 
 /// Miasma's poison serving trap.
@@ -16,11 +17,10 @@ pub async fn serve_poison(
     gzip_response: bool,
 ) -> impl IntoResponse {
     let stream = response_stream::build_response_stream(poison_stream_args);
-
     let body_stream = if gzip_response {
-        Body::from_stream(gzip::gzip_stream(stream))
+        Body::from_stream(LowMemGzipStream::new(buffered::buffer_stream(stream, None)))
     } else {
-        Body::from_stream(stream)
+        Body::from_stream(buffered::buffer_stream(stream, None))
     };
 
     let mut builder = Response::builder().header(header::CONTENT_TYPE, "text/html");

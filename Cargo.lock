@@ -1350,7 +1350,7 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
 name = "miasma"
-version = "0.4.2"
+version = "0.4.3"
 dependencies = [
  "async-compression",
  "async-stream",
@@ -1383,6 +1383,7 @@ dependencies = [
  "tower",
  "url",
  "uuid",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -3128,6 +3129,11 @@ dependencies = [
  "quote",
  "syn 2.0.119",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.6.7"
+source = "git+https://github.com/trifectatechfoundation/zlib-rs?rev=aeded1c#aeded1cda74089e9ca9600d4e94abf424c35b116"
 
 [[package]]
 name = "zmij"

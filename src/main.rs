@@ -17,7 +17,7 @@ fn main() {
         .enable_all()
         .thread_name("miasma-thread")
         .build()
-        .unwrap()
+        .expect("failed to initialize tokio runtime")
         .block_on(async {
             tokio::spawn(cli::check_for_new_version());
             let shutdown_signal = async {
