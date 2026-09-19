@@ -4,6 +4,7 @@ pub mod html_escaper;
 pub mod stream_size;
 
 #[macro_export]
+#[doc(hidden)]
 /// Ternary expression - equivalent to `if cond { a } else { b }`.
 ///
 /// ```
