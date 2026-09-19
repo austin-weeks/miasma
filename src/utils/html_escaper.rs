@@ -40,20 +40,13 @@ pub fn escape_html_stream(html_stream: impl MiasmaStream) -> impl MiasmaStream {
 
 #[cfg(test)]
 mod test {
+    use crate::test_utils;
+
     use super::*;
     use bytes::Bytes;
 
     fn as_stream(s: &'static str) -> impl MiasmaStream {
         try_stream! { yield Bytes::from_static(s.as_bytes()) }
-    }
-
-    async fn drain_stream(stream: impl MiasmaStream) -> String {
-        let mut buf = String::new();
-        let mut stream = pin!(stream);
-        while let Some(chunk) = stream.next().await {
-            buf.push_str(str::from_utf8(&chunk.unwrap()).unwrap());
-        }
-        buf
     }
 
     #[tokio::test]
@@ -66,7 +59,8 @@ mod test {
         ];
 
         for (input, expected) in test_cases {
-            let sanitized = drain_stream(escape_html_stream(as_stream(input))).await;
+            let sanitized =
+                test_utils::drain_byte_stream(escape_html_stream(as_stream(input))).await;
             assert_eq!(sanitized, expected);
         }
     }
@@ -74,7 +68,7 @@ mod test {
     #[tokio::test]
     async fn script_tag_is_escaped() {
         let input = "<script>console.log('foo');</script>";
-        let sanitized = drain_stream(escape_html_stream(as_stream(input))).await;
+        let sanitized = test_utils::drain_byte_stream(escape_html_stream(as_stream(input))).await;
         assert!(!sanitized.contains("<script>"));
         assert!(!sanitized.contains("</script>"));
     }
@@ -83,7 +77,7 @@ mod test {
     async fn content_is_preserved() {
         let input = "<p>The quick brown fox jumps over the lazy dog. & foo.</p>";
         let expected = "&lt;p&gt;The quick brown fox jumps over the lazy dog. &amp; foo.&lt;/p&gt;";
-        let sanitized = drain_stream(escape_html_stream(as_stream(input))).await;
+        let sanitized = test_utils::drain_byte_stream(escape_html_stream(as_stream(input))).await;
         assert_eq!(sanitized, expected);
     }
 }

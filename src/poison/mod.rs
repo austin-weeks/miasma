@@ -3,7 +3,6 @@ use futures::{StreamExt, stream};
 use rand::seq::IndexedRandom;
 
 pub mod cache;
-mod gzip;
 mod link_settings;
 mod poison_client;
 mod response_stream;
