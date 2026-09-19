@@ -11,7 +11,7 @@ use futures::{Stream, StreamExt};
 use thiserror::Error;
 use zlib_rs::{Deflate, DeflateError, DeflateFlush, Status};
 
-use crate::{MiasmaStream, gzip::GzipSettings, ternary};
+use crate::{MiasmaStream, gzip::DEFLATE_CONFIG, ternary};
 
 const OUTPUT_BUFFER_SIZE: usize = 512;
 
@@ -50,13 +50,10 @@ pub enum CompressError<E> {
 
 impl<E> LowMemGzipStream<E> {
     pub fn new(stream: impl MiasmaStream<E> + 'static + Send) -> Self {
-        // TODO: make this an input and pipe through app starting at config / cli.
-        let config = GzipSettings::default().into_deflate_config();
-
         Self {
             state: CompressState::Pull,
             stream: Box::pin(stream),
-            deflate: Deflate::new_with_config(config),
+            deflate: Deflate::new_with_config(DEFLATE_CONFIG),
             input_buf: Bytes::new(),
             input_cursor: 0,
         }
@@ -290,10 +287,7 @@ mod test {
 
     #[test]
     fn correctly_advances_input_cursor() {
-        let stream = try_stream! {
-            yield Bytes::new();
-        };
-        let mut gzip_stream = LowMemGzipStream::<io::Error>::new(stream);
+        let mut gzip_stream = LowMemGzipStream::<io::Error>::new(try_stream!(yield Bytes::new()));
 
         gzip_stream.input_cursor = 0;
         gzip_stream.input_buf = Bytes::from(vec![0u8; 3]);

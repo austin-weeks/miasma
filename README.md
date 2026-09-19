@@ -3,7 +3,7 @@
 [![No AI](https://custom-icon-badges.demolab.com/badge/No%20AI-2f2f2f?logo=non-ai&logoColor=white&logoSize=auto)](#)
 [![crates.io](https://img.shields.io/crates/v/miasma?logo=rust)](https://crates.io/crates/miasma)
 [![downloads](https://img.shields.io/crates/dr/miasma?logo=rust)](https://crates.io/crates/miasma)
-[![Release](https://github.com/austin-weeks/miasma/actions/workflows/Release.yaml/badge.svg)](https://github.com/austin-weeks/miasma/actions/workflows/Release.yaml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/austinweeks/miasma)](https://hub.docker.com/r/austinweeks/miasma)
 [![GitHub commits since latest release](https://img.shields.io/github/commits-since/austin-weeks/miasma/latest?logo=github)](#)
 
 <picture>
