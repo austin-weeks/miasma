@@ -145,6 +145,8 @@ fn format_byte_count(bytes: i64) -> String {
 
 #[cfg(test)]
 mod test {
+    use std::borrow::Cow;
+
     use super::*;
     use futures::StreamExt;
 
@@ -163,7 +165,7 @@ mod test {
             .collect::<String>()
             .await;
         let errors = scraper::Html::parse_document(&page).errors;
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [Cow<'_, str>; 0]);
     }
 
     #[test]

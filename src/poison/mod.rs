@@ -119,7 +119,7 @@ mod test {
         stream = None;
 
         let resp = test_utils::drain_byte_stream(stream.or_fallback(HtmlEscapeMode::Escape)).await;
-        assert!(!resp.is_empty());
+        assert_ne!(resp, "");
         assert_ne!(resp, "some stream");
     }
 }

@@ -208,6 +208,6 @@ mod test {
             .collect::<String>();
 
         let errors = scraper::Html::parse_document(&document).errors;
-        assert!(errors.is_empty());
+        assert_eq!(errors, [] as [Cow<'_, str>; 0]);
     }
 }
