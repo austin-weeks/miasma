@@ -188,7 +188,7 @@ mod test {
         async fn no_cache_client_failure() {
             let source = PoisonSource::new(client_that_errors(), HtmlEscapeMode::Escape);
             let resp = test_utils::drain_byte_stream(source.stream_poison().await).await;
-            assert!(!resp.is_empty());
+            assert_ne!(resp, "");
         }
 
         // Cache Hit
@@ -216,7 +216,7 @@ mod test {
             let source = PoisonSource::new(client_that_errors(), HtmlEscapeMode::Escape)
                 .with_cache(PoisonCache::new(), Box::new(|| true));
             let resp = test_utils::drain_byte_stream(source.stream_poison().await).await;
-            assert!(!resp.is_empty());
+            assert_ne!(resp, "");
         }
 
         // Cache Miss
@@ -247,7 +247,7 @@ mod test {
             let source = PoisonSource::new(client_that_errors(), HtmlEscapeMode::Escape)
                 .with_cache(PoisonCache::new(), Box::new(|| false));
             let resp = test_utils::drain_byte_stream(source.stream_poison().await).await;
-            assert!(!resp.is_empty());
+            assert_ne!(resp, "");
         }
     }
 }

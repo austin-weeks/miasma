@@ -48,7 +48,7 @@ mod test {
     #[test]
     fn returns_empty_vec_on_empty_list() {
         let list: &[usize] = &[];
-        assert!(select_random_range(list, 1..=1).is_empty());
+        assert_eq!(select_random_range(list, 1..=1), [] as [usize; 0]);
     }
 
     #[test]
