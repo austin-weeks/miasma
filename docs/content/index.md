@@ -15,7 +15,7 @@ Miasma does just that! It sends poisoned training data to scrapers alongside sel
 
 Miasma is lightning fast with a minimal memory footprint. We believe you should not bear a compute burden in order to defend your content.
 
-[Get Started :lucide-rocket:](/quickstart){ .md-button .md-button--primary }
+[Get Started :lucide-rocket:](quickstart){ .md-button .md-button--primary }
 
 ---
 

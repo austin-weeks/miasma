@@ -35,7 +35,7 @@ curl --compressed http://localhost:9999
 
 ## Configuration
 
-You can pass [configuration options](/settings) as command-line flags:
+You can pass [configuration options](settings) as command-line flags:
 
 === "Local"
 
@@ -60,7 +60,7 @@ You can pass [configuration options](/settings) as command-line flags:
           - 9999:9999
     ```
 
-You may also create a [config file](/config-file) and provide access to the container.
+You may also create a [config file](config-file) and provide access to the container.
 
 === "Local"
 
@@ -90,7 +90,7 @@ You may also create a [config file](/config-file) and provide access to the cont
 
 ## Tracking Metrics
 
-Miasma's [metrics feature](/metrics) allows you to track scrapers that interact with Miasma. Because the feature writes data to a [SQLite](https://en.wikipedia.org/wiki/SQLite){:target="_blank"} file, it's necessary to provide the container with a volume where this data can be stored.
+Miasma's [metrics feature](metrics) allows you to track scrapers that interact with Miasma. Because the feature writes data to a [SQLite](https://en.wikipedia.org/wiki/SQLite){:target="_blank"} file, it's necessary to provide the container with a volume where this data can be stored.
 
 === "Local"
 

@@ -62,7 +62,7 @@ This configuration will catch all variations of the `/naughty-bots` path, e.g. `
 
 Lastly, we'll start Miasma and specify `/naughty-bots` as our link prefix. This instructs Miasma to start links with `/naughty-bots/`, which ensures scrapers are properly routed through our proxy and back to Miasma.
 
-Let's tune some of Miasma's [configuration settings](/settings).
+Let's tune some of Miasma's [configuration settings](settings).
 
 We'll limit the number of max in-flight connections to 50. Any requests exceeding this limit will immediately receive a **429** response rather than being added to a queue. We'll also force Miasma to gzip compress all responses, and we'll use the link count and max depth options to release scrapers after they consume ~100K poisoned pages.
 
@@ -75,7 +75,7 @@ miasma --link-prefix '/naughty-bots' -p 9855 -c 50 --force-gzip --link-count 5 -
 Let's deploy our site and watch as scrapers eat from our poison slop machine!
 
 <figure markdown="span">
-    ![Logs showing scrapers hitting Miasma](/images/logs.gif){width="900"}
+    ![Logs showing scrapers hitting Miasma](images/logs.gif){width="900"}
 </figure>
 
 ## Allowing Good Bots via `robots.txt`

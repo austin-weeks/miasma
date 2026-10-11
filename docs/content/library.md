@@ -11,7 +11,7 @@ If you happen to have an existing Rust server using the [axum crate](https://doc
 cargo add miasma
 ```
 
-Define Miasma's [configuration options](/settings), build an axum router, then nest it within your server's routes.
+Define Miasma's [configuration options](settings), build an axum router, then nest it within your server's routes.
 
 ```Rust title="Using Miasma's Axum Router"
 use miasma::MiasmaConfig;

@@ -34,7 +34,7 @@ By default, Miasma binds to port `9999` on `localhost`. View a response with:
 curl --compressed http://localhost:9999
 ```
 
-View all available [configuration](/settings) flags:
+View all available [configuration](settings) flags:
 
 ```sh
 miasma --help

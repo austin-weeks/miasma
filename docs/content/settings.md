@@ -5,7 +5,7 @@ icon: lucide/sliders-horizontal
 
 # Configuring Miasma
 
-Miasma can be configured via CLI flags or a [config file](/config-file).
+Miasma can be configured via CLI flags or a [config file](config-file).
 
 You can view options at any time by running `miasma --help`.
 
@@ -35,7 +35,7 @@ You can view options at any time by running `miasma --help`.
 
 ### Metrics Settings
 
-See the [metrics documentation](/metrics#configuration).
+See the [metrics documentation](metrics#configuration).
 
 ## Tweaking Settings for Minimal Resource Usage
 

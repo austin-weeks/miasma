@@ -1,5 +1,5 @@
 [project]
-site_url = "https://austin-weeks.github.io/miasma"
+site_url = "https://austin-weeks.github.io/miasma/"
 site_name = "Miasma Documentation"
 site_description = "Trap AI web scrapers in an endless poison pit."
 site_author = "Austin Weeks"

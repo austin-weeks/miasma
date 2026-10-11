@@ -5,7 +5,7 @@ icon: lucide/file-cog
 
 # Using a Config File
 
-You can specify Miasma's [configuration options](/settings) by pointing to a configuration file.
+You can specify Miasma's [configuration options](settings) by pointing to a configuration file.
 
 ```sh title="Specifying a config file"
 miasma --config-file <path_to_config_file>

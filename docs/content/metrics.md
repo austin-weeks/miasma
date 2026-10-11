@@ -19,7 +19,7 @@ You can view collected metrics via Miasma's dedicated metrics page. This page wi
 
 ## Configuration
 
-Metrics may be configured via command-line arguments, or via a [config file](/config-file).
+Metrics may be configured via command-line arguments, or via a [config file](config-file).
 
 | Option             | Default    | Description                                                                                                                       |
 | ------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
@@ -30,4 +30,4 @@ Metrics may be configured via command-line arguments, or via a [config file](/co
 
 ## Collecting Metrics with Docker
 
-See the [docker setup page](/docker#tracking-metrics).
+See the [docker setup page](docker#tracking-metrics).
