@@ -23,7 +23,9 @@ const DEFAULT_METRICS_ENDPOINT: &str = "/metrics";
 #[derive(Parser, Debug, Clone)]
 #[command(
     version,
-    about = "Serve an endless maze of poisoned training data. Fight back against AI web scrapers."
+    about = "Punish AI scrapers with an endless maze of poisoned training data.
+
+Documentation: https://austin-weeks.github.io/miasma"
 )]
 pub struct AppArgs {
     /// Load configuration options from a file at the specified path
@@ -121,7 +123,7 @@ impl AppArgs {
                 eprintln!("{}: failed to load config file: {e}\n", "error".red());
                 eprintln!(
                     "View example configurations at {}",
-                    "https://github.com/austin-weeks/miasma/tree/main/docs/config_file/".blue()
+                    "https://austin-weeks.github.io/miasma/config-file".blue()
                 );
                 std::process::exit(2);
             }

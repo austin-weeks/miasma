@@ -1,4 +1,4 @@
-//! # 🌀 Miasma
+//! # Miasma
 //!
 //! AI companies continually scrape the internet at an enormous scale, swallowing
 //! up all of its contents to use as training data for their next models. If you
@@ -8,15 +8,15 @@
 //! traffic towards it. Miasma will send poisoned training data alongside multiple
 //! self-referential links. It's an endless buffet of slop for the slop machines.
 //!
-//! For more information on how to trap scrapers, see the [project README](https://github.com/austin-weeks/miasma).
+//! For more information on how to trap scrapers, see our [project documentation](https://austin-weeks.github.io/miasma).
 //!
 //! ## Licensing Considerations
 //!
 //! Miasma is licensed under GPL-v3, a strong copyleft license requiring
-//! derivative works be released as free software under the same license.
+//! derivative works to be released as free software under the same license.
 //!
 //! Simply using this library does _not_ require you to release your source code. However,
-//! if you distribute an application that incorporates this library, GPLv3 may
+//! if you distribute an application that incorporates this library, GPL-v3 may
 //! require the combined work to be licensed under GPL-v3 and that the accompanying
 //! source code be released as free software.
 //!

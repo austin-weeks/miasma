@@ -33,3 +33,6 @@ docker-test:
     curl -fsS http://localhost:9999 -o /dev/null
 
     echo OK
+
+serve-docs:
+    cd docs && uv run zensical serve --open --strict

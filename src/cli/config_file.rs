@@ -20,6 +20,7 @@ pub enum ConfigFileError {
 
 #[derive(Deserialize)]
 #[cfg_attr(test, derive(Default))]
+#[serde(deny_unknown_fields)]
 pub struct ConfigFile {
     pub max_in_flight: Option<u32>,
     pub link_prefix: Option<String>,
@@ -53,7 +54,7 @@ pub fn load_config_file(file_path: &str) -> Result<ConfigFile, ConfigFileError> 
     #[expect(clippy::case_sensitive_file_extension_comparisons)]
     let config = if file.ends_with(".json") {
         serde_json::from_str::<ConfigFile>(&file_contents).map_err(ConfigFileError::Json)
-    } else if file.ends_with(".yaml") {
+    } else if file.ends_with(".yaml") || file.ends_with(".yml") {
         serde_yaml::from_str::<ConfigFile>(&file_contents).map_err(ConfigFileError::Yaml)
     } else if file.ends_with(".toml") {
         toml::from_str::<ConfigFile>(&file_contents).map_err(ConfigFileError::Toml)

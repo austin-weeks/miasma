@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=Poetsen+One&display=swap");
+
+[data-md-color-scheme="slate"] {
+  /* Dark mode page background color*/
+  /* Slightly less saturated and lighter than the default */
+  --md-default-bg-color: hsla(var(--md-hue), 10%, 16%, 1);
+
+  /* Page header background color */
+  --md-default-bg-color--light: color-mix(
+    in srgb,
+    /* This transparency is the default zensical value */
+    var(--md-default-bg-color) 54%,
+    transparent
+  );
+
+  /* Code blocks - slightly lighter than the page bg */
+  --md-code-bg-color: color-mix(in srgb, var(--md-default-bg-color) 95%, white);
+
+  /* Code copy button */
+  --md-code-bg-color--light: color-mix(
+    in srgb,
+    var(--md-code-bg-color) 90%,
+    transparent
+  );
+  --md-code-bg-color--lighter: color-mix(
+    in srgb,
+    var(--md-code-bg-color) 54%,
+    transparent
+  );
+
+  /* Accent - set equal to primary color but slightly more saturated */
+  --md-accent-fg-color: hsl(from var(--md-primary-fg-color) h calc(s * 1.2) l);
+  --md-accent-fg-color--transparent: color-mix(
+    in srgb,
+    var(--md-accent-fg-color) 10%,
+    transparent
+  );
+
+  /* Soft accent (primary, 70% toward white) for links and nav */
+  --md-accent-fg-color--soft: color-mix(
+    in srgb,
+    var(--md-accent-fg-color) 70%,
+    white
+  );
+}
+
+/* Active page in the sidebar nav */
+[data-md-color-scheme="slate"]
+  .md-nav--primary
+  .md-nav__item
+  .md-nav__link--active {
+  color: var(--md-accent-fg-color--soft);
+  background: color-mix(
+    in srgb,
+    var(--md-accent-fg-color--soft) 20%,
+    transparent
+  );
+}
+
+/* Hovered links in the sidebar */
+[data-md-color-scheme="slate"]
+  .md-nav__item--section
+  .md-nav__item
+  .md-nav__link:hover,
+[data-md-color-scheme="slate"]
+  .md-nav__item--section
+  .md-nav__item
+  .md-nav__link:focus,
+[data-md-color-scheme="slate"] .md-nav--secondary .md-nav__link:hover,
+[data-md-color-scheme="slate"] .md-nav--secondary .md-nav__link:focus {
+  color: var(--md-accent-fg-color--soft) !important;
+}
+
+/* Links in page content */
+[data-md-color-scheme="slate"] .md-typeset a,
+[data-md-color-scheme="slate"] .md-typeset a code,
+[data-md-color-scheme="slate"] .md-typeset a:hover,
+[data-md-color-scheme="slate"] .md-typeset a:focus,
+[data-md-color-scheme="slate"] .md-typeset a:hover code,
+[data-md-color-scheme="slate"] .md-typeset a:focus code {
+  color: var(--md-accent-fg-color--soft);
+}
+
+/* Primary buttons & copy notification - use normal font color instead of accent */
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary,
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary:hover,
+[data-md-color-scheme="slate"] .md-typeset .md-button--primary:focus,
+[data-md-color-scheme="slate"] .md-dialog__inner {
+  color: var(--md-default-fg-color);
+}
+
+/* Site name in the header (just the site name not the section names) */
+.md-header__topic:first-child {
+  font-family: "Poetsen One", var(--md-text-font), sans-serif;
+  font-weight: 400; /* Poetsen One has no bold weight */
+}
+
+/* Homepage "Miasma" title */
+#miasma {
+  font-family: "Poetsen One", var(--md-text-font), sans-serif;
+  font-weight: 400;
+}

@@ -67,13 +67,13 @@ fn stream_metrics_page(
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
-                <link rel="icon" href={include_str!("miasma-swirl.txt")}>
+                <link rel="icon" href={"https://austin-weeks.github.io/miasma/logo-simple.png"}>
                 <title>"Miasma Metrics"</title>
                 <style>{include_str!("metrics.css")}</style>
             </head>
             <body>
-                <h1>"🌀 Miasma"</h1>
-                <h2>"Request Counts by Scraper User-Agent"</h2>
+                <h1>"Miasma"</h1>
+                <h2>"Metrics by Scraper User-Agent"</h2>
                 <table>
                     <thead>
                         <tr>

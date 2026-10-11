@@ -1,6 +1,6 @@
 [project]
 site_url = "https://austin-weeks.github.io/miasma"
-site_name = "Miasma"
+site_name = "Miasma Documentation"
 site_description = "Trap AI web scrapers in an endless poison pit."
 site_author = "Austin Weeks"
 
@@ -10,16 +10,38 @@ repo_url = "https://github.com/austin-weeks/miasma"
 repo_name = "austin-weeks/miasma"
 
 docs_dir = "content"
-edit_uri = "blob/main/docs/pages" # 'blob' rather than 'edit' since users need to fork the repo
+edit_uri = "edit/main/docs/content"
 
-# nav = [
-#   { "Get started" = "index.md" },
-#   { "Markdown in 5min" = "markdown.md" },
-# ]
+extra_css = [
+  "stylesheets/extra.css",
+]
+
+nav = [
+  "index.md",
+  "quickstart.md",
+  { "Usage Modes" = [
+    "running-locally.md",
+    "docker.md",
+    "library.md",
+  ]},
+  {"Trapping Scrapers" = [
+    "how-to-trap-scrapers.md",
+    "proxy-setup.md",
+  ]},
+  { "Configuration" = [
+    "settings.md",
+    "config-file.md",
+  ]},
+  "metrics.md",
+  "performance.md",
+  "community.md",
+  "disclaimer.md",
+]
+
 
 [project.theme]
-favicon = "images/logo.png"
-logo = "images/logo.png"
+favicon = "images/logo-simple.png"
+logo = "images/logo-simple.png"
 language = "en"
 features = [
   "announce.dismiss",
@@ -27,7 +49,7 @@ features = [
   # "content.action.view",
   "content.code.annotate",
   "content.code.copy",
-  "content.code.select",
+  # "content.code.select",
   "content.footnote.tooltips",
   "content.tabs.link",
   "content.tooltips",
@@ -41,8 +63,8 @@ features = [
   "navigation.path",
   # "navigation.prune",
   "navigation.sections",
-  "navigation.tabs", # MAYBE turn this off later when we get multiple pages
-  # "navigation.tabs.sticky",
+  # "navigation.tabs", # MAYBE turn this off later when we get multiple pages
+  # "navigation.tabs.sticky", # maybe turn off? idk
   "navigation.top",
   "navigation.tracking",
   "search.highlight",
@@ -69,16 +91,19 @@ media = "(prefers-color-scheme: light)"
 scheme = "default"
 toggle.icon = "lucide/sun"
 toggle.name = "Switch to dark mode"
-primary = "blue grey"
-accent = "blue"
+primary = "purple"
+accent = "purple"
 
 [[project.theme.palette]]
 media = "(prefers-color-scheme: dark)"
 scheme = "slate"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to system preference"
-primary = "blue grey"
-accent = "blue"
+primary = "purple"
+accent = "purple"
+
+[project.theme.icon.admonition]
+abstract = "lucide/heart"
 
 [[project.extra.social]]
 name = "Docker Image"
