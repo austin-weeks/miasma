@@ -12,9 +12,9 @@ where
     const MAX_TRIES: u8 = 50;
     let mut tries = 0;
 
-    let count = rand::random_range(range);
+    let count = rand::random_range(range).min(list.len());
     let mut out = Vec::with_capacity(count);
-    while out.len() < out.capacity() {
+    while out.len() < count {
         if tries >= MAX_TRIES {
             break;
         }
@@ -44,6 +44,18 @@ pub fn select_random<T>(list: &[T]) -> &T {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn bounds_selection_size_and_handles_zero_sized_elements() {
+        let output = select_random_range(&[1, 1, 1], 1000..=1000);
+        assert_eq!(output.capacity(), 3);
+        assert_eq!(output, [1]);
+        assert_eq!(select_random_range(&[()], 0..=0), [] as [(); 0]);
+        assert_eq!(
+            select_random_range::<u8, _>(&[], 1000..=1000),
+            [] as [u8; 0]
+        );
+    }
 
     #[test]
     fn returns_empty_vec_on_empty_list() {

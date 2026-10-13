@@ -79,29 +79,26 @@ impl PoisonSource {
         )
     }
 
-    /// This _technically_ only inserts into the cache if the stream is fully drained
-    /// by the scraper, which should almost always be the case.
+    /// Cache the response only after the stream is fully drained.
     async fn fetch_then_insert(&self, cache: Arc<Mutex<PoisonCache>>) -> Option<impl MiasmaStream> {
         // Poison responses are typically 4-8 KB
         const INITIAL_BUF_CAPACITY: usize = 4 * 1024; // 4 KB
 
         let stream = self.client.stream_poison().await?;
+        let max_bytes = cache.lock().expect("cache mutex poisoned").max_bytes();
 
         Some(try_stream! {
-            let mut buf = BytesMut::with_capacity(INITIAL_BUF_CAPACITY);
+            let mut buf = Some(BytesMut::with_capacity(INITIAL_BUF_CAPACITY.min(max_bytes)));
             let mut stream = pin!(stream);
             while let Some(chunk) = stream.next().await {
                 let bytes = chunk?;
-                buf.extend_from_slice(&bytes);
+                extend_cache_buffer(&mut buf, &bytes, max_bytes);
                 yield bytes;
             }
-            let entry_size = buf.capacity();
-            let mut cache_guard = cache.lock().expect("cache mutex poisoned");
-            if cache_guard.insert(buf.freeze(), Some(entry_size)).is_err() {
-                eprintln!(
-                    "Poison too big to store in poison cache - exceeds max cache byte size of {}",
-                    cache_guard.max_bytes(),
-                );
+            if let Some(buf) = buf {
+                let entry_size = buf.capacity();
+                let mut cache_guard = cache.lock().expect("cache mutex poisoned");
+                let _ = cache_guard.insert(buf.freeze(), Some(entry_size));
             }
         })
     }
@@ -112,6 +109,23 @@ impl PoisonSource {
     }
 }
 
+fn extend_cache_buffer(buffer: &mut Option<BytesMut>, bytes: &[u8], max_bytes: usize) {
+    let Some(buf) = buffer else { return };
+    if bytes.len() > max_bytes.saturating_sub(buf.len()) {
+        *buffer = None;
+        return;
+    }
+    let needed = buf.len() + bytes.len();
+    if needed > buf.capacity() {
+        // BytesMut's automatic growth may exceed the cache budget.
+        let capacity = needed.max(buf.capacity().saturating_mul(2)).min(max_bytes);
+        let mut grown = BytesMut::with_capacity(capacity);
+        grown.extend_from_slice(buf);
+        *buf = grown;
+    }
+    buf.extend_from_slice(bytes);
+}
+
 #[cfg(test)]
 mod test {
     use axum::{Router, routing::get};
@@ -120,6 +134,50 @@ mod test {
     use crate::test_utils::{self, TestServer};
 
     use super::*;
+
+    #[test]
+    fn cache_buffer_stays_bounded_and_stops_after_overflow() {
+        let mut buffer = Some(BytesMut::with_capacity(4));
+        for bytes in [b"1234".as_slice(), b"5", b"6"] {
+            extend_cache_buffer(&mut buffer, bytes, 6);
+            let buf = buffer.as_ref().unwrap();
+            assert!(buf.capacity() <= 6);
+        }
+        assert_eq!(buffer.as_ref().unwrap().as_ref(), b"123456");
+        extend_cache_buffer(&mut buffer, b"7", 6);
+        assert!(buffer.is_none());
+        extend_cache_buffer(&mut buffer, b"", 6);
+        assert!(buffer.is_none());
+    }
+
+    #[test]
+    fn cache_buffer_rejects_oversized_first_chunk() {
+        let mut buffer = Some(BytesMut::new());
+        extend_cache_buffer(&mut buffer, b"1234567", 6);
+        assert!(buffer.is_none());
+    }
+
+    #[tokio::test]
+    async fn oversized_poison_is_streamed_without_evicting_cached_data() {
+        let cache = PoisonCache::new();
+        let size = cache.max_bytes() + 1;
+        let (client, _server) = client_and_server_with(&"x".repeat(size)).await;
+        let source =
+            PoisonSource::new(client, HtmlEscapeMode::Escape).with_cache(cache, Box::new(|| false));
+        let cache = &source.cache.as_ref().unwrap().cache;
+        cache
+            .lock()
+            .unwrap()
+            .insert(bytes::Bytes::from_static(b"old"), None)
+            .unwrap();
+        let mut poison = pin!(source.stream_poison().await);
+        let mut received = 0;
+        while let Some(chunk) = poison.next().await {
+            received += chunk.unwrap().len();
+        }
+        assert_eq!(received, size);
+        assert_eq!(cache.lock().unwrap().get_random().unwrap(), "old");
+    }
 
     fn client_that_errors() -> PoisonClient {
         PoisonClient::new(
@@ -167,6 +225,24 @@ mod test {
             .get_random()
             .unwrap();
         assert_eq!(cached, "client poison!");
+    }
+
+    #[tokio::test]
+    async fn dropped_stream_preserves_cached_data() {
+        let (client, _server) = client_and_server_with("client poison!").await;
+        let source = PoisonSource::new(client, HtmlEscapeMode::Escape)
+            .with_cache(PoisonCache::new(), Box::new(|| false));
+        let cache = &source.cache.as_ref().unwrap().cache;
+        cache
+            .lock()
+            .unwrap()
+            .insert(bytes::Bytes::from_static(b"old"), None)
+            .unwrap();
+        {
+            let mut stream = pin!(source.stream_poison().await);
+            assert!(!stream.next().await.unwrap().unwrap().is_empty());
+        }
+        assert_eq!(cache.lock().unwrap().get_random().unwrap(), "old");
     }
 
     // So many cases to cover D:
