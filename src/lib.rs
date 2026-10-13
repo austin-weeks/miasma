@@ -61,6 +61,7 @@
 mod config;
 mod error;
 mod gzip;
+#[cfg(not(target_arch = "wasm32"))]
 mod metrics;
 mod poison;
 mod response_templates;

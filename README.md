@@ -24,6 +24,17 @@ Miasma is available as a [Docker image](https://hub.docker.com/r/austinweeks/mia
 
 [![Package Managers](https://repology.org/badge/vertical-allrepos/miasma.svg?exclude_unsupported=1)](https://repology.org/project/miasma/versions)
 
+### Running on Cloudflare Workers
+
+Run the [Cloudflare Worker adapter](./crates/cloudflare-worker/) with caching
+and streamed gzip responses. SQLite metrics are unavailable on WASM;
+Cloudflare provides request/error metrics.
+
+### Running on Node.js, Bun, or Deno
+
+The [Node.js adapter](./crates/node/) serves WASM through `node:http` with
+streamed gzip and disconnect cancellation. SQLite metrics are unavailable.
+
 ---
 
 > [!CAUTION]

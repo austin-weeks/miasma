@@ -1,0 +1,6 @@
+**
+!Cargo.toml
+!Cargo.lock
+!src/**
+!crates/*/Cargo.toml
+!crates/*/src/**

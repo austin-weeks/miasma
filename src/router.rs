@@ -1,4 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Mutex;
 
 use axum::{
     Router,
@@ -11,9 +13,10 @@ use reqwest::{StatusCode, header};
 use serde::Deserialize;
 use tokio::sync::{Semaphore, TryAcquireError};
 
+#[cfg(not(target_arch = "wasm32"))]
+use crate::metrics::{self, Metrics, UserAgent};
 use crate::{
     MiasmaConfig, MiasmaError,
-    metrics::{self, Metrics, UserAgent},
     poison::{
         self, HtmlEscapeMode, LinkSettings, PoisonClient, PoisonResponseStreamArgs, PoisonSource,
         cache::{self, PoisonCache},
@@ -32,6 +35,7 @@ impl QueryParams {
 
 #[derive(Clone)]
 pub struct AppState {
+    #[cfg(not(target_arch = "wasm32"))]
     metrics: Option<Arc<Mutex<Metrics>>>,
     poison_source: Arc<PoisonSource>,
     config: Arc<MiasmaConfig>,
@@ -60,8 +64,11 @@ pub struct AppState {
 /// # Errors
 ///
 /// Returns an error if the metrics feature is enabled and initializing the
-/// database fails.
+/// database fails, or `max_in_flight` exceeds the platform's semaphore limit.
 pub fn new_miasma_router(config: MiasmaConfig) -> Result<Router, MiasmaError> {
+    if config.max_in_flight as usize > Semaphore::MAX_PERMITS {
+        return Err(MiasmaError::MaxInFlightExceeded(Semaphore::MAX_PERMITS));
+    }
     let in_flight_sem = Arc::new(Semaphore::new(config.max_in_flight as usize));
     let escape_mode = ternary!(
         config.unsafe_allow_html,
@@ -79,6 +86,7 @@ pub fn new_miasma_router(config: MiasmaConfig) -> Result<Router, MiasmaError> {
         )
     ));
 
+    #[cfg(not(target_arch = "wasm32"))]
     let metrics = match &config.metrics {
         None => None,
         Some(c) => {
@@ -87,17 +95,20 @@ pub fn new_miasma_router(config: MiasmaConfig) -> Result<Router, MiasmaError> {
         }
     };
 
+    #[cfg(not(target_arch = "wasm32"))]
     let metrics_router = metrics::new_metrics_router(config.metrics.as_ref(), metrics.clone());
 
     let router = Router::new()
         .fallback(get(app_handler))
         .with_state(AppState {
+            #[cfg(not(target_arch = "wasm32"))]
             metrics,
             poison_source,
             in_flight_sem,
             config: Arc::new(config),
-        })
-        .merge(metrics_router);
+        });
+    #[cfg(not(target_arch = "wasm32"))]
+    let router = router.merge(metrics_router);
     Ok(router)
 }
 
@@ -134,6 +145,7 @@ async fn app_handler(
 
     let current_depth = query.ok().and_then(|q| q.page).unwrap_or(1);
 
+    #[cfg(not(target_arch = "wasm32"))]
     let ua_with_metrics = match state.metrics {
         None => None,
         Some(metrics) => {
@@ -157,6 +169,7 @@ async fn app_handler(
         PoisonResponseStreamArgs {
             permit: in_flight_permit,
             poison_source: state.poison_source,
+            #[cfg(not(target_arch = "wasm32"))]
             metrics: ua_with_metrics,
             link_settings,
         },
@@ -180,6 +193,19 @@ mod tests {
 
     async fn test_server() -> TestServer {
         test_utils::test_server(Router::new().fallback(get("ok"))).await
+    }
+
+    #[test]
+    fn max_in_flight_respects_platform_limit() {
+        let result = new_miasma_router(MiasmaConfig {
+            max_in_flight: u32::MAX,
+            ..Default::default()
+        });
+        if usize::BITS == 32 {
+            assert!(matches!(result, Err(MiasmaError::MaxInFlightExceeded(_))));
+        } else {
+            assert!(result.is_ok());
+        }
     }
 
     #[tokio::test]

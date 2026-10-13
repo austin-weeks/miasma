@@ -8,6 +8,8 @@ mod poison_client;
 mod response_stream;
 mod route;
 mod source;
+#[cfg(any(target_arch = "wasm32", test))]
+mod wasm_breaker;
 
 pub use link_settings::LinkSettings;
 use link_settings::LinkSettingsInner;

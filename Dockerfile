@@ -3,15 +3,16 @@ FROM rust:bookworm AS builder
 WORKDIR /build
 
 COPY Cargo.toml Cargo.lock .
+COPY crates/ crates/
 
 # Build just dependencies so they can be cached between image builds
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN mkdir src && echo "fn main() {}" > src/main.rs && touch src/lib.rs
 RUN cargo build --release
-RUN rm -rf src
 
 # Build actual miasma binary
 COPY src/ src/
-RUN cargo build --release
+# COPY preserves timestamps; touch invalidates Cargo's cached dummy artifacts.
+RUN touch src/main.rs src/lib.rs && cargo build --release
 
 # --- RUNTIME ---
 FROM gcr.io/distroless/cc-debian12

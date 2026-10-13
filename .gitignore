@@ -2,7 +2,9 @@
 .DS_Store
 
 # Crusty Rusty
-/target
+**/target
+/crates/*/build
+/crates/*/.wrangler
 
 # Docs Build
 docs/site

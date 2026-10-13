@@ -1,5 +1,7 @@
 use std::pin::pin;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::Mutex;
 
 use async_stream::{stream, try_stream};
 use bytes::Bytes;
@@ -8,15 +10,19 @@ use tokio::sync::OwnedSemaphorePermit;
 use uuid::Uuid;
 
 use super::{LinkSettings, LinkSettingsInner};
+#[cfg(not(target_arch = "wasm32"))]
 use crate::metrics::{Metrics, UserAgent};
 use crate::poison::PoisonSource;
-use crate::utils::{cow_helpers, stream_size};
+use crate::utils::cow_helpers;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::utils::stream_size;
 use crate::{MiasmaStream, QueryParams, templating::TemplateBuilder};
 
 pub struct PoisonResponseStreamArgs {
     pub permit: OwnedSemaphorePermit,
     pub poison_source: Arc<PoisonSource>,
     pub link_settings: LinkSettings,
+    #[cfg(not(target_arch = "wasm32"))]
     pub metrics: Option<(UserAgent, Arc<Mutex<Metrics>>)>,
 }
 
@@ -26,9 +32,11 @@ pub fn build_response_stream(
         permit,
         poison_source,
         link_settings,
+        #[cfg(not(target_arch = "wasm32"))]
         metrics,
     }: PoisonResponseStreamArgs,
 ) -> impl MiasmaStream {
+    #[cfg(not(target_arch = "wasm32"))]
     let metrics_for_total = metrics.clone();
 
     let template = TemplateBuilder::with_random_template();
@@ -44,14 +52,17 @@ pub fn build_response_stream(
         for body_section in template.body_sections() {
             yield Bytes::from_static(body_section.pre_poison().as_bytes());
 
-            let mut poison = pin!(stream_size::with_bytes_counted(
-                poison_source.stream_poison().await,
+            let poison = poison_source.stream_poison().await;
+            #[cfg(not(target_arch = "wasm32"))]
+            let poison = stream_size::with_bytes_counted(
+                poison,
                 async |n| {
                     if let Some((user_agent, metrics)) = &metrics {
                         metrics.lock().expect("metrics mutex poisoned").record_poison_bytes(user_agent, n);
                     }
                 },
-            ));
+            );
+            let mut poison = pin!(poison);
             while let Some(chunk) = poison.next().await {
                 yield chunk?;
             }
@@ -77,14 +88,16 @@ pub fn build_response_stream(
         }
     };
 
-    stream_size::with_bytes_counted(stream, async move |n| {
+    #[cfg(not(target_arch = "wasm32"))]
+    let stream = stream_size::with_bytes_counted(stream, async move |n| {
         if let Some((user_agent, metrics)) = &metrics_for_total {
             metrics
                 .lock()
                 .expect("metrics mutex poisoned")
                 .record_total_bytes(user_agent, n);
         }
-    })
+    });
+    stream
 }
 
 fn build_links_stream(

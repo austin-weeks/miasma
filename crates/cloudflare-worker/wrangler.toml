@@ -1,0 +1,6 @@
+name = "miasma-worker"
+main = "build/index.js"
+compatibility_date = "2026-10-12"
+
+[build]
+command = "worker-build --profile wasm-release -- --locked"

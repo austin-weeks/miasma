@@ -8,7 +8,7 @@ let
 in
 rustPlatform.buildRustPackage rec {
   pname = cargoToml.package.name;
-  version = cargoToml.package.version;
+  version = cargoToml.workspace.package.version;
 
   src = builtins.path {
     path = ../.;

@@ -1,5 +1,8 @@
 use std::time::Duration;
 
+#[cfg(target_arch = "wasm32")]
+use super::wasm_breaker::WasmBreaker;
+#[cfg(not(target_arch = "wasm32"))]
 use failsafe::{
     StateMachine,
     backoff::EqualJittered,
@@ -8,6 +11,8 @@ use failsafe::{
 };
 use futures::{StreamExt, TryStreamExt};
 use reqwest::Client;
+#[cfg(target_arch = "wasm32")]
+use std::sync::Mutex;
 use url::Url;
 
 use crate::{
@@ -17,10 +22,13 @@ use crate::{
 
 pub struct PoisonClient {
     client: Client,
+    #[cfg(not(target_arch = "wasm32"))]
     breaker: StateMachine<
         OrElse<SuccessRateOverTimeWindow<EqualJittered>, ConsecutiveFailures<EqualJittered>>,
         (),
     >,
+    #[cfg(target_arch = "wasm32")]
+    breaker: Mutex<WasmBreaker>,
     poison_source: Url,
     escape_mode: HtmlEscapeMode,
 }
@@ -29,14 +37,15 @@ impl PoisonClient {
     const REQUEST_TIMEOUT: Duration = Duration::from_secs(20);
 
     pub fn new(poison_source: Url, escape_mode: HtmlEscapeMode) -> Self {
-        let client = Client::builder()
-            .gzip(true) // Poison Fountain serves gzipped data
-            .timeout(Self::REQUEST_TIMEOUT)
-            .user_agent(MIASMA_USER_AGENT)
-            .build()
-            .expect("should be able to build client");
+        let client = Client::builder().user_agent(MIASMA_USER_AGENT);
+        #[cfg(not(target_arch = "wasm32"))]
+        let client = client.gzip(true).timeout(Self::REQUEST_TIMEOUT);
+        let client = client.build().expect("should be able to build client");
 
+        #[cfg(not(target_arch = "wasm32"))]
         let breaker = failsafe::Config::new().build();
+        #[cfg(target_arch = "wasm32")]
+        let breaker = Mutex::new(WasmBreaker::default());
 
         Self {
             client,
@@ -48,19 +57,38 @@ impl PoisonClient {
 
     /// Fetch poisoned training data.
     pub async fn stream_poison(&self) -> Option<impl MiasmaStream + use<>> {
+        #[cfg(not(target_arch = "wasm32"))]
         let result = self
             .breaker
             .call(
-                // We're intentionally wrapping this in a new Future so that
-                // the request is not created if the breaker is closed.
+                // Create the request only if the breaker permits it.
                 async { self.fetch_poison().await },
             )
             .await;
 
+        #[cfg(not(target_arch = "wasm32"))]
         if let Err(failsafe::Error::Inner(e)) = &result {
             // The error message is already well formatted
             eprintln!("{e}");
         }
+
+        #[cfg(target_arch = "wasm32")]
+        let result = {
+            if !self
+                .breaker
+                .lock()
+                .expect("breaker mutex poisoned")
+                .permits(js_sys::Date::now())
+            {
+                return None;
+            }
+            let result = self.fetch_poison().await;
+            self.breaker
+                .lock()
+                .expect("breaker mutex poisoned")
+                .record(result.is_err(), js_sys::Date::now());
+            result
+        };
 
         let Ok(poison_stream) = result else {
             return None;
@@ -73,14 +101,17 @@ impl PoisonClient {
     }
 
     async fn fetch_poison(&self) -> Result<impl MiasmaStream + use<>, MiasmaError> {
-        Ok(self
-            .client
-            .get(self.poison_source.as_str())
-            .send()
-            .await?
-            .error_for_status()?
-            .bytes_stream()
-            .map_err(MiasmaError::from))
+        let request = self.client.get(self.poison_source.as_str());
+        #[cfg(target_arch = "wasm32")]
+        let request = request.timeout(Self::REQUEST_TIMEOUT);
+        let fetch = request.send();
+        // Fetch futures and streams remain on the same WASM thread.
+        #[cfg(target_arch = "wasm32")]
+        let fetch = send_wrapper::SendWrapper::new(fetch);
+        let response = fetch.await?.error_for_status()?.bytes_stream();
+        #[cfg(target_arch = "wasm32")]
+        let response = send_wrapper::SendWrapper::new(response);
+        Ok(response.map_err(MiasmaError::from))
     }
 }
 
