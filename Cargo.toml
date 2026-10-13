@@ -7,8 +7,7 @@ version = "0.4.3"
 edition = "2024"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/austin-weeks/miasma"
-readme = "README.md"
-include = ["README.md", "LICENSE", "src", "Cargo.toml", "Cargo.lock"]
+include = ["/LICENSE", "/src"]
 
 [dependencies]
 async-stream = "0.3.6"
