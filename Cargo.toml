@@ -3,39 +3,68 @@ name = "miasma"
 description = "Trap malicious AI web scrapers in an endless pit of poisoned training data."
 keywords = ["ai", "anti-ai", "web-scraping", "cli", "server"]
 categories = ["artificial-intelligence", "command-line-utilities", "development-tools", "security"]
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+include = ["/LICENSE", "/src"]
+
+[workspace]
+members = ["crates/cloudflare-worker", "crates/node"]
+
+[workspace.package]
 version = "0.4.3"
 edition = "2024"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/austin-weeks/miasma"
-include = ["/LICENSE", "/src"]
+
+[workspace.dependencies]
+axum = { version = "0.8", default-features = false }
+miasma = { path = "." }
+reqwest = { version = "0.13", default-features = false, features = ["stream"] }
+tokio = "1"
+tower = { version = "0.5", features = ["util"] }
+uuid = "1"
+worker = { version = "0.8", features = ["http"] }
 
 [dependencies]
 async-stream = "0.3.6"
-axum = { version = "0.8.8", features = ["macros"] }
+axum = { workspace = true, features = ["macros", "query"] }
 base64 = "0.22.1"
 bytes = "1.11.1"
-clap = { version = "4.6.0", features = ["derive", "env"] }
-colored = "3.1.1"
 derive_builder = "0.20.2"
-diesel = { version = "2.3.9", features = ["sqlite"] }
-failsafe = "1.3.0"
 fhtml = "0.6.1"
 futures = "0.3.32"
 rand = "0.10.0"
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
-serde_yaml = "0.9.34"
 thiserror = "2.0.18"
-tokio = { version = "1.50.0", features = ["rt-multi-thread", "signal"] }
+tokio = { workspace = true, features = ["sync", "io-util"] }
 tokio-util = { version = "0.7.18", features = ["io"] }
-toml = { version = "1.1.2", features = [ "serde" ] }
 url = { version = "2.5.8", features = ["serde"] }
-uuid = { version = "1.22.0", features = ["v4"] }
+uuid = { workspace = true, features = ["v4"] }
 zlib-rs = "0.6.8"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+axum = { workspace = true, features = ["default"] }
+clap = { version = "4", features = ["derive", "env"] }
+colored = "3"
+diesel = { version = "2", features = ["sqlite"] }
+failsafe = "1"
+serde_json = "1"
+serde_yaml = "0.9"
+tokio = { workspace = true, features = ["rt-multi-thread", "signal"] }
+toml = "1"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+js-sys = "0.3"
+reqwest.workspace = true
+send_wrapper = { version = "0.6", features = ["futures"] }
+uuid = { workspace = true, features = ["js"] }
 
 [dev-dependencies]
 async-compression = { version = "0.4.48", features = ["gzip"] }
-tower = { version = "0.5.2", features = ["util"] }
+tower.workspace = true
 http-body-util = "0.1.2"
 gag = "1.0.0"
 serial_test = "3.4.0"
@@ -45,10 +74,10 @@ temp-env = "0.3.6"
 
 # On Linux, use default TLS
 [target.'cfg(target_os = "linux")'.dependencies]
-reqwest = { version = "0.13.2", default-features = false, features = ["default-tls", "gzip", "json", "http2", "charset", "system-proxy", "stream"] }
+reqwest = { workspace = true, features = ["default-tls", "gzip", "json", "http2", "charset", "system-proxy"] }
 # On Mac & Windows, use native TLS
 [target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
-reqwest = { version = "0.13.2", default-features = false, features = ["native-tls", "gzip", "json", "http2", "charset", "system-proxy", "stream"] }
+reqwest = { workspace = true, features = ["native-tls", "gzip", "json", "http2", "charset", "system-proxy"] }
 # On Windows, bundle libsqlite
 [target.'cfg(target_os = "windows")'.dependencies]
 libsqlite3-sys = { version = "0.37.0", features = ["bundled"] }
@@ -68,3 +97,8 @@ lto = true
 debug = false
 strip = true
 panic = "unwind"
+
+[profile.wasm-release]
+inherits = "release"
+# wasm-bindgen needs the target_features section to build catch wrappers.
+strip = "debuginfo"

@@ -2,7 +2,6 @@ name: Checks
 
 on:
   pull_request:
-    branches: ["main"]
   schedule:
     - cron: "0 14 * * *"
   workflow_call:
@@ -26,9 +25,6 @@ jobs:
       - name: Validate Build
         run: cargo build
 
-      - name: Check Formatting
-        run: cargo fmt --check
-
       - name: Clippy!
         run: cargo clippy --no-deps --all-targets
 
@@ -37,6 +33,40 @@ jobs:
 
       - name: Verify Publish-Ready
         run: cargo publish --dry-run
+
+  JavaScript-Adapters:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@686976e191b89faba57d3206551f0f330d8cb249 # stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - run: cargo fmt --all --check
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: latest
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: latest
+      - name: Check WASM libraries
+        run: cargo clippy --locked --workspace --lib --target wasm32-unknown-unknown -- -D warnings
+      - name: Test Worker adapter
+        run: |
+          cargo install worker-build --version 0.8.7 --locked
+          python3 crates/cloudflare-worker/smoke.py
+      - name: Build and test Node.js adapter
+        working-directory: crates/node
+        run: |
+          cargo install wasm-pack --locked
+          wasm-pack build --no-opt --profile wasm-release --target web --out-dir build -- --locked
+          node test.mjs
+          bun test.mjs
+          deno run --allow-read --allow-net --allow-env test.mjs
 
   Documentation-Site-Test:
     runs-on: ubuntu-latest

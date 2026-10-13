@@ -3,7 +3,7 @@ help:
 
 local-ci:
     cargo build
-    cargo fmt --check
+    cargo fmt --all --check
     cargo clippy --no-deps --all-targets -- -D warnings
     cargo test
     cargo publish --dry-run --allow-dirty

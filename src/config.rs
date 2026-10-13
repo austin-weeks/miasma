@@ -1,5 +1,6 @@
 use std::fmt::Display;
 
+#[cfg(not(target_arch = "wasm32"))]
 use base64::prelude::*;
 use derive_builder::Builder;
 use url::Url;
@@ -23,6 +24,7 @@ use crate::{DEFAULT_LINK_COUNT, DEFAULT_MAX_IN_FLIGHT, DEFAULT_POISON_SOURCE};
 /// ```
 /// use miasma::MiasmaConfig;
 ///
+/// # #[cfg(not(target_arch = "wasm32"))]
 /// let config = MiasmaConfig::builder()
 ///     .max_in_flight(20)
 ///     .link_prefix("/bots")
@@ -73,6 +75,7 @@ pub struct MiasmaConfig {
     /// Settings for Miasma's requests metrics feature.
     #[builder(default = None)]
     #[builder(setter(custom))]
+    #[cfg(not(target_arch = "wasm32"))]
     pub metrics: Option<MetricsConfig>,
 
     /// Disable poison source response caching.
@@ -100,6 +103,7 @@ impl MiasmaConfigBuilder {
     /// - `endpoint` - endpoint at which the router should server request metrics.
     /// - `username` - basic auth username required to access request metrics.
     /// - `password` - basic auth password required to access request metrics.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn metrics(
         &mut self,
         db_path: &str,
@@ -133,6 +137,7 @@ impl MiasmaConfigBuilder {
 
 #[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq))]
+#[cfg(not(target_arch = "wasm32"))]
 pub struct MetricsConfig {
     pub db_path: String,
     pub endpoint: String,
@@ -140,6 +145,7 @@ pub struct MetricsConfig {
     password: String,
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 impl MetricsConfig {
     pub fn new(db_path: &str, username: &str, password: &str, endpoint: &str) -> Self {
         MetricsConfig {

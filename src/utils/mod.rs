@@ -1,6 +1,7 @@
 pub mod buffered;
 pub mod cow_helpers;
 pub mod html_escaper;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod stream_size;
 
 #[macro_export]
