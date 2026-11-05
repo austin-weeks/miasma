@@ -1,14 +1,14 @@
 use colored::Colorize;
 
 const SPIRAL: &str = "\
-⠀⠀⠀⢀⣠⣴⣶⣿⡷⠀⠀⠀⠀⠀
-⠀⢀⣴⣿⠟⠉⠀⠀⠀⠀⠀⠀⠀⠀
-⢀⣾⡟⠁⢀⣴⣾⠿⠿⠿⢿⣶⣄⠀
-⣸⣿⠁⢀⣿⡟⠁⣠⣤⣤⡀⠙⣿⣧
-⢿⣿⠀⠸⣿⡇⠘⠿⠋⢻⣿⠀⢸⣿
-⠘⣿⣧⠀⠻⣿⣶⣤⣴⣿⠟⢀⣾⡿
-⠀⠘⢿⣷⣄⡀⠉⠉⠉⢀⣠⣾⡿⠁
-⠀⠀⠀⠉⠛⠿⠿⠿⠿⠿⠟⠉⠀⠀
+⠀⠀⠀⢀⣤⣶⣴⣦⣴⣦⣶⣤⡀⠀⠀⠀
+⠀⢀⣤⣾⣿⡯⠉⣁⣈⠉⢽⣿⣷⣤⡀⠀
+⢀⣾⣿⡟⠋⣰⣿⡟⣿⣿⣤⡙⢻⣿⣷⡀
+⣨⣿⣿⠃⣼⡿⠁⡴⢦⡉⣽⣷⠸⣿⣿⣅
+⢻⣿⣧⡀⢻⣿⣷⡄⣾⡇⢹⣿⢀⣼⣿⡟
+⠀⢹⣿⣧⣀⠙⠻⠿⠟⣡⣿⣧⣸⣿⡏⠀
+⠀⠈⠿⣿⣿⣿⣶⣶⣾⣿⣿⣿⣿⠿⠁⠀
+⠀⠀⠀⠀⠙⠛⠿⠟⠻⠿⠛⠋⠀⠀⠀⠀
 ";
 
 const MIASMA: &str = "
@@ -25,8 +25,8 @@ pub fn print_miasma_ascii_art() {
     println!();
     for (spiral_line, miasma_line) in SPIRAL.lines().zip(MIASMA.lines()) {
         println!(
-            "  {}  {}",
-            spiral_line.truecolor(30, 52, 175),
+            " {} {}",
+            spiral_line.truecolor(153, 65, 170), // purble
             miasma_line.bright_black()
         );
     }
